@@ -32,10 +32,10 @@ function ensureDemoNode() {
     if (!existing) {
       run(
         `INSERT INTO iot_devices (id, device_code, name, location_text, latitude, longitude, status, firmware_version, secret_reference, sensor_model, is_simulated, created_at, updated_at)
-         VALUES ('dev-dg-iot-001', 'DG-IOT-001', 'DustGuard Demo Node', '62 Nguyễn Chí Thanh, Phường Láng Thượng, Hà Nội', 21.0205, 105.8078, 'OFFLINE', '1.2.0-esp32', 'dustguard_secret_key_2026', 'ASAIR APM2000', 0, datetime('now'), datetime('now'))`
+         VALUES ('dev-dg-iot-001', 'DG-IOT-001', 'DustGuard Demo Node', '484 Lê Văn Việt, Hồ Chí Minh', 21.0205, 105.8078, 'OFFLINE', '1.2.0-esp32', 'dustguard_secret_key_2026', 'ASAIR APM2000', 0, datetime('now'), datetime('now'))`
       );
     }
-  } catch (err) {}
+  } catch (err) { }
 }
 ensureDemoNode();
 
@@ -414,202 +414,202 @@ iotRouter.get('/devices/:id/readings', requireAuth, (req: Request, res: Response
 const handleTelemetryIngest = (req: Request, res: Response): void => {
   try {
     const sensorCode = req.body.deviceId || req.body.device_id || req.body.deviceCode || req.body.sensorCode || req.body.sensor_code || (req.body.device_id ? queryOne<any>('SELECT device_code FROM iot_devices WHERE id = ?', [req.body.device_id])?.device_code : undefined);
-  const pm25 = req.body.pm25 !== undefined ? parseFloat(req.body.pm25) : (req.body.pm2_5 !== undefined ? parseFloat(req.body.pm2_5) : undefined);
-  const pm10 = req.body.pm10 !== undefined ? parseFloat(req.body.pm10) : (pm25 !== undefined ? parseFloat((pm25 * 1.5).toFixed(1)) : undefined);
-  const timestamp = req.body.timestamp || new Date().toISOString();
-  const signature = req.body.signature || req.headers['x-device-signature'] || req.headers['x-signature'] || req.headers['x-device-token'];
-  const temperature = req.body.temperature;
-  const humidity = req.body.humidity;
+    const pm25 = req.body.pm25 !== undefined ? parseFloat(req.body.pm25) : (req.body.pm2_5 !== undefined ? parseFloat(req.body.pm2_5) : undefined);
+    const pm10 = req.body.pm10 !== undefined ? parseFloat(req.body.pm10) : (pm25 !== undefined ? parseFloat((pm25 * 1.5).toFixed(1)) : undefined);
+    const timestamp = req.body.timestamp || new Date().toISOString();
+    const signature = req.body.signature || req.headers['x-device-signature'] || req.headers['x-signature'] || req.headers['x-device-token'];
+    const temperature = req.body.temperature;
+    const humidity = req.body.humidity;
 
-  if (!sensorCode || pm25 === undefined || isNaN(pm25)) {
-    res.status(400).json({
-      success: false,
-      error: { code: 'INVALID_PAYLOAD', message: 'Payload thiếu trường bắt buộc (sensorCode, pm25)' },
-    });
-    return;
-  }
-
-  let device = queryOne<any>(`SELECT * FROM iot_devices WHERE device_code = ? OR id = ?`, [sensorCode, req.body.device_id || sensorCode]);
-  if (!device && sensorCode === 'DG-IOT-001') {
-    ensureDemoNode();
-    device = queryOne<any>(`SELECT * FROM iot_devices WHERE device_code = 'DG-IOT-001'`);
-  }
-
-  if (!device) {
-    res.status(403).json({
-      success: false,
-      error: { code: 'DEVICE_NOT_REGISTERED', message: 'Thiết bị trạm đo chưa được đăng ký trong hệ thống' },
-    });
-    return;
-  }
-
-  // 1. Verify HMAC-SHA256 (Nếu có signature thì kiểm tra; nếu không có signature nhưng là trạm pilot DG-IOT-001 thì cho phép qua)
-  let isSigValid = false;
-  if (signature) {
-    const canonicalMsg = buildCanonicalMessage(device.device_code, Number(pm10), Number(pm25), timestamp);
-    const expectedSigCanonical = crypto
-      .createHmac('sha256', device.secret_reference || 'dustguard_secret_key_2026')
-      .update(canonicalMsg)
-      .digest('hex')
-      .toLowerCase();
-
-    const expectedSigJson = crypto
-      .createHmac('sha256', device.secret_reference || 'dustguard_secret_key_2026')
-      .update(JSON.stringify(req.body))
-      .digest('hex')
-      .toLowerCase();
-
-    isSigValid = timingSafeEqual(expectedSigCanonical, String(signature).trim().toLowerCase()) ||
-                 timingSafeEqual(expectedSigJson, String(signature).trim().toLowerCase()) ||
-                 String(signature) === device.secret_reference;
-  } else if (device.device_code === 'DG-IOT-001' || device.is_simulated === 0) {
-    // Chế độ Pilot Hardware thực tế
-    isSigValid = true;
-  }
-
-  if (!isSigValid) {
-    res.status(403).json({
-      success: false,
-      error: { code: 'INVALID_SIGNATURE', message: 'Chữ ký HMAC không khớp với khóa bảo mật của thiết bị' },
-    });
-    return;
-  }
-
-  // 2. Check Clock Drift (<= 5 minutes nếu client tự truyền timestamp)
-  const incomingTime = new Date(timestamp).getTime();
-  if (isNaN(incomingTime)) {
-    res.status(400).json({
-      success: false,
-      error: { code: 'INVALID_TIMESTAMP', message: 'Dấu thời gian ISO không hợp lệ' },
-    });
-    return;
-  }
-
-  const driftMs = Math.abs(Date.now() - incomingTime);
-  if (driftMs > 5 * 60 * 1000) {
-    res.status(400).json({
-      success: false,
-      error: { code: 'CLOCK_DRIFT', message: 'Đồng hồ thiết bị lệch quá 5 phút so với máy chủ' },
-    });
-    return;
-  }
-
-  // 3. Replay Attack Protection (Chỉ kiểm tra khi client chủ động gửi timestamp)
-  if (req.body.timestamp && device.last_seen_at) {
-    const lastSeenTime = new Date(device.last_seen_at).getTime();
-    if (incomingTime <= lastSeenTime) {
-      res.status(409).json({
+    if (!sensorCode || pm25 === undefined || isNaN(pm25)) {
+      res.status(400).json({
         success: false,
-        error: { code: 'REPLAY_DETECTED', message: 'Phát hiện gói tin trùng lặp thời gian hoặc tấn công phát lại' },
+        error: { code: 'INVALID_PAYLOAD', message: 'Payload thiếu trường bắt buộc (sensorCode, pm25)' },
       });
       return;
     }
-  }
 
-  // 4. Physical Boundaries (Impossible Value Guard)
-  const numPm10 = Number(pm10);
-  const numPm25 = Number(pm25);
-  let integrityStatus = 'VALID';
-
-  if (numPm10 < 0 || numPm10 > 2500 || numPm25 < 0 || numPm25 > 2500) {
-    integrityStatus = 'CORRUPTED';
-  }
-
-  // 5. Flatline Detection (5 consecutive identical readings)
-  const recentReadings = query<any>(
-    `SELECT pm10, pm25 FROM iot_readings WHERE device_id = ? ORDER BY recorded_at DESC LIMIT 4`,
-    [device.id]
-  );
-
-  let isFlatline = false;
-  if (recentReadings.length === 4) {
-    const allIdentical = recentReadings.every(
-      r => Math.abs(r.pm10 - numPm10) < 0.01 && Math.abs(r.pm25 - numPm25) < 0.01
-    );
-    if (allIdentical) {
-      isFlatline = true;
-      integrityStatus = 'FLATLINE';
+    let device = queryOne<any>(`SELECT * FROM iot_devices WHERE device_code = ? OR id = ?`, [sensorCode, req.body.device_id || sensorCode]);
+    if (!device && sensorCode === 'DG-IOT-001') {
+      ensureDemoNode();
+      device = queryOne<any>(`SELECT * FROM iot_devices WHERE device_code = 'DG-IOT-001'`);
     }
-  }
 
-  const readingId = `read-${Date.now()}-${crypto.randomUUID().substring(0, 6)}`;
-
-  transaction(() => {
-    // Insert reading
-    run(
-      `INSERT INTO iot_readings (id, device_id, recorded_at, received_at, pm25, pm10, temperature, humidity, raw_payload_json, integrity_status, created_at)
-       VALUES (?, ?, ?, datetime('now'), ?, ?, ?, ?, ?, ?, datetime('now'))`,
-      [
-        readingId,
-        device.id,
-        timestamp,
-        numPm25,
-        numPm10,
-        temperature || null,
-        humidity || null,
-        JSON.stringify(req.body),
-        integrityStatus,
-      ]
-    );
-
-    // Update device status & last_seen_at
-    if (isFlatline) {
-      run(
-        `UPDATE iot_devices SET status = 'FAULTY', last_seen_at = ?, updated_at = datetime('now') WHERE id = ?`,
-        [timestamp, device.id]
-      );
-
-      run(
-        `INSERT INTO iot_events (id, device_id, event_type, severity, description, created_at)
-         VALUES (?, ?, 'FLATLINE', 'HIGH', 'Phát hiện cảm biến treo số 5 bản tin liên tiếp cùng giá trị PM10 & PM2.5', datetime('now'))`,
-        [`ev-${Date.now()}`, device.id]
-      );
-
-      dispatchAutomationEvent('IOT_DEVICE_OFFLINE', 'IOT_DEVICE', device.id, {
-        device_code: device.device_code,
-        status: 'FAULTY',
-        reason: 'FLATLINE',
+    if (!device) {
+      res.status(403).json({
+        success: false,
+        error: { code: 'DEVICE_NOT_REGISTERED', message: 'Thiết bị trạm đo chưa được đăng ký trong hệ thống' },
       });
-    } else {
-      if (device.status === 'OFFLINE') {
-        run(
-          `INSERT INTO iot_events (id, device_id, event_type, severity, description, created_at)
-           VALUES (?, ?, 'RECONNECTED', 'LOW', 'Thiết bị cảm biến đã khôi phục kết nối và tiếp tục gửi telemetry', datetime('now'))`,
-          [`ev-recon-${Date.now()}`, device.id]
-        );
-      }
-
-      run(
-        `UPDATE iot_devices SET status = 'ONLINE', last_seen_at = ?, updated_at = datetime('now') WHERE id = ?`,
-        [timestamp, device.id]
-      );
+      return;
     }
 
-    // Spike detection -> Create Signal if PM2.5 > 100 or PM10 > 200
-    if (numPm25 > 100 || numPm10 > 200) {
-      const sigId = `sig-iot-${Date.now()}`;
+    // 1. Verify HMAC-SHA256 (Nếu có signature thì kiểm tra; nếu không có signature nhưng là trạm pilot DG-IOT-001 thì cho phép qua)
+    let isSigValid = false;
+    if (signature) {
+      const canonicalMsg = buildCanonicalMessage(device.device_code, Number(pm10), Number(pm25), timestamp);
+      const expectedSigCanonical = crypto
+        .createHmac('sha256', device.secret_reference || 'dustguard_secret_key_2026')
+        .update(canonicalMsg)
+        .digest('hex')
+        .toLowerCase();
+
+      const expectedSigJson = crypto
+        .createHmac('sha256', device.secret_reference || 'dustguard_secret_key_2026')
+        .update(JSON.stringify(req.body))
+        .digest('hex')
+        .toLowerCase();
+
+      isSigValid = timingSafeEqual(expectedSigCanonical, String(signature).trim().toLowerCase()) ||
+        timingSafeEqual(expectedSigJson, String(signature).trim().toLowerCase()) ||
+        String(signature) === device.secret_reference;
+    } else if (device.device_code === 'DG-IOT-001' || device.is_simulated === 0) {
+      // Chế độ Pilot Hardware thực tế
+      isSigValid = true;
+    }
+
+    if (!isSigValid) {
+      res.status(403).json({
+        success: false,
+        error: { code: 'INVALID_SIGNATURE', message: 'Chữ ký HMAC không khớp với khóa bảo mật của thiết bị' },
+      });
+      return;
+    }
+
+    // 2. Check Clock Drift (<= 5 minutes nếu client tự truyền timestamp)
+    const incomingTime = new Date(timestamp).getTime();
+    if (isNaN(incomingTime)) {
+      res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_TIMESTAMP', message: 'Dấu thời gian ISO không hợp lệ' },
+      });
+      return;
+    }
+
+    const driftMs = Math.abs(Date.now() - incomingTime);
+    if (driftMs > 5 * 60 * 1000) {
+      res.status(400).json({
+        success: false,
+        error: { code: 'CLOCK_DRIFT', message: 'Đồng hồ thiết bị lệch quá 5 phút so với máy chủ' },
+      });
+      return;
+    }
+
+    // 3. Replay Attack Protection (Chỉ kiểm tra khi client chủ động gửi timestamp)
+    if (req.body.timestamp && device.last_seen_at) {
+      const lastSeenTime = new Date(device.last_seen_at).getTime();
+      if (incomingTime <= lastSeenTime) {
+        res.status(409).json({
+          success: false,
+          error: { code: 'REPLAY_DETECTED', message: 'Phát hiện gói tin trùng lặp thời gian hoặc tấn công phát lại' },
+        });
+        return;
+      }
+    }
+
+    // 4. Physical Boundaries (Impossible Value Guard)
+    const numPm10 = Number(pm10);
+    const numPm25 = Number(pm25);
+    let integrityStatus = 'VALID';
+
+    if (numPm10 < 0 || numPm10 > 2500 || numPm25 < 0 || numPm25 > 2500) {
+      integrityStatus = 'CORRUPTED';
+    }
+
+    // 5. Flatline Detection (5 consecutive identical readings)
+    const recentReadings = query<any>(
+      `SELECT pm10, pm25 FROM iot_readings WHERE device_id = ? ORDER BY recorded_at DESC LIMIT 4`,
+      [device.id]
+    );
+
+    let isFlatline = false;
+    if (recentReadings.length === 4) {
+      const allIdentical = recentReadings.every(
+        r => Math.abs(r.pm10 - numPm10) < 0.01 && Math.abs(r.pm25 - numPm25) < 0.01
+      );
+      if (allIdentical) {
+        isFlatline = true;
+        integrityStatus = 'FLATLINE';
+      }
+    }
+
+    const readingId = `read-${Date.now()}-${crypto.randomUUID().substring(0, 6)}`;
+
+    transaction(() => {
+      // Insert reading
       run(
-        `INSERT INTO signals (id, source_type, external_source_id, signal_type, title, description, location_text, latitude, longitude, observed_at, received_at, integrity_status, created_at)
-         VALUES (?, 'IOT', ?, 'PM25_SPIKE', ?, ?, ?, ?, ?, ?, datetime('now'), 'VALID', datetime('now'))`,
+        `INSERT INTO iot_readings (id, device_id, recorded_at, received_at, pm25, pm10, temperature, humidity, raw_payload_json, integrity_status, created_at)
+       VALUES (?, ?, ?, datetime('now'), ?, ?, ?, ?, ?, ?, datetime('now'))`,
         [
-          sigId,
-          device.device_code,
-          `Cảnh báo bụi vượt ngưỡng tại trạm ${device.name}`,
-          `Nồng độ PM2.5 đo được: ${numPm25} µg/m³, PM10: ${numPm10} µg/m³ vượt giới hạn QCVN 05:2023`,
-          device.location_text,
-          device.latitude,
-          device.longitude,
+          readingId,
+          device.id,
           timestamp,
+          numPm25,
+          numPm10,
+          temperature || null,
+          humidity || null,
+          JSON.stringify(req.body),
+          integrityStatus,
         ]
       );
 
-      dispatchAutomationEvent('IOT_SIGNAL_CREATED', 'SIGNAL', sigId, {
-        device_code: device.device_code,
-        pm25: numPm25,
-        pm10: numPm10,
-      });
-    }
-  });
+      // Update device status & last_seen_at
+      if (isFlatline) {
+        run(
+          `UPDATE iot_devices SET status = 'FAULTY', last_seen_at = ?, updated_at = datetime('now') WHERE id = ?`,
+          [timestamp, device.id]
+        );
+
+        run(
+          `INSERT INTO iot_events (id, device_id, event_type, severity, description, created_at)
+         VALUES (?, ?, 'FLATLINE', 'HIGH', 'Phát hiện cảm biến treo số 5 bản tin liên tiếp cùng giá trị PM10 & PM2.5', datetime('now'))`,
+          [`ev-${Date.now()}`, device.id]
+        );
+
+        dispatchAutomationEvent('IOT_DEVICE_OFFLINE', 'IOT_DEVICE', device.id, {
+          device_code: device.device_code,
+          status: 'FAULTY',
+          reason: 'FLATLINE',
+        });
+      } else {
+        if (device.status === 'OFFLINE') {
+          run(
+            `INSERT INTO iot_events (id, device_id, event_type, severity, description, created_at)
+           VALUES (?, ?, 'RECONNECTED', 'LOW', 'Thiết bị cảm biến đã khôi phục kết nối và tiếp tục gửi telemetry', datetime('now'))`,
+            [`ev-recon-${Date.now()}`, device.id]
+          );
+        }
+
+        run(
+          `UPDATE iot_devices SET status = 'ONLINE', last_seen_at = ?, updated_at = datetime('now') WHERE id = ?`,
+          [timestamp, device.id]
+        );
+      }
+
+      // Spike detection -> Create Signal if PM2.5 > 100 or PM10 > 200
+      if (numPm25 > 100 || numPm10 > 200) {
+        const sigId = `sig-iot-${Date.now()}`;
+        run(
+          `INSERT INTO signals (id, source_type, external_source_id, signal_type, title, description, location_text, latitude, longitude, observed_at, received_at, integrity_status, created_at)
+         VALUES (?, 'IOT', ?, 'PM25_SPIKE', ?, ?, ?, ?, ?, ?, datetime('now'), 'VALID', datetime('now'))`,
+          [
+            sigId,
+            device.device_code,
+            `Cảnh báo bụi vượt ngưỡng tại trạm ${device.name}`,
+            `Nồng độ PM2.5 đo được: ${numPm25} µg/m³, PM10: ${numPm10} µg/m³ vượt giới hạn QCVN 05:2023`,
+            device.location_text,
+            device.latitude,
+            device.longitude,
+            timestamp,
+          ]
+        );
+
+        dispatchAutomationEvent('IOT_SIGNAL_CREATED', 'SIGNAL', sigId, {
+          device_code: device.device_code,
+          pm25: numPm25,
+          pm10: numPm10,
+        });
+      }
+    });
 
     res.status(201).json({
       success: true,

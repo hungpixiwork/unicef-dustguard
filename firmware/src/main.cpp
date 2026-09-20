@@ -99,7 +99,11 @@ void setup() {
     g_wifi.begin(WIFI_SSID, WIFI_PASSWORD);
 
     // 7. Cấu hình Client kết nối đám mây Cloudflare D1
+    #ifdef API_TELEMETRY_PATH
     g_apiClient.configure(API_BASE_URL_DEFAULT, API_TELEMETRY_PATH);
+    #else
+    g_apiClient.configure(API_BASE_URL_DEFAULT, API_TELEMETRY_PATH_DEFAULT);
+    #endif
     g_caseApiClient.configure(API_BASE_URL_DEFAULT);
     g_telemetry.begin(DEFAULT_DEVICE_ID, DEVICE_SECRET_KEY, &g_apiClient, &g_wifi);
 

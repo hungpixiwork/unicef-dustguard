@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "dust-guard-vn",
+  "account_id": "5fdd1d1433519df6429d7418d43fff9a",
   "main": "server/index.ts",
   "compatibility_date": "2024-09-23",
   "compatibility_flags": [
@@ -33,7 +34,7 @@
   "vars": {
     "ENVIRONMENT": "production",
     "APP_ORIGIN": "https://dustguard.phamphunguyenhung.com",
-    "ALLOWED_ORIGINS": "https://dustguard.phamphunguyenhung.com,http://localhost:3000,http://localhost:3002,http://localhost:8787",
+    "ALLOWED_ORIGINS": "https://dustguard.phamphunguyenhung.com,https://dust-guard-vn.phamphunguyenhung.workers.dev,http://localhost:3000,http://localhost:3002,http://localhost:8787",
     "INTEGRATION_SERVICE_KEY": "dustguard-internal-2026"
   },
   "routes": [

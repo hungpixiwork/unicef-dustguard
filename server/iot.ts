@@ -1,7 +1,13 @@
 import { Hono } from 'hono';
 import { get, query, run } from './d1.js';
-import { getLiveState, updateLiveState } from './iot-live-state.js';
+import { getLiveState, updateLiveState, NORMAL_SYNC_MS } from './iot-live-state.js';
 export { getLiveState, updateLiveState } from './iot-live-state.js';
+
+// Cache để tránh SELECT iot_devices mỗi lần (Zero D1 reads)
+const deviceMetaCache = new Map<string, { id: string; deviceCode: string; wifiSsid: string | null }>();
+
+// Theo dõi thời điểm persist D1 gần nhất của từng thiết bị
+const lastD1PersistMap = new Map<string, number>();
 
 // Helper parse UTC timestamp an toàn cho Node.js tránh lệch timezone
 const parseToEpochMs = (timeStr?: string | null): number => {
@@ -19,9 +25,15 @@ export function createIoTRouter() {
   const router = new Hono<{ Bindings: { DB: any; INTEGRATION_SERVICE_KEY?: string } }>();
 
   // ============================================================================
-  // 1. INGESTION TELEMETRY (POST /api/iot/telemetry & POST /api/sensors/reading)
+  // 1. INGESTION TELEMETRY (POST /api/iot/telemetry, /api/iot/reading, /api/iot/ingest)
+  // ZERO-D1 NORMAL SYNC:
+  // - Khi telemetry NORMAL liên tục: Cập nhật live state in-memory, 0 D1 reads, 0 D1 writes.
+  // - Chỉ ghi D1 khi:
+  //   1) Phát hiện bất thường mới hoặc chuyển đổi trạng thái (NORMAL -> HIGH_PM, hoặc hồi phục).
+  //   2) Sync bình thường cách nhau >= 5 phút (NORMAL_SYNC_MS = 300_000).
   // ============================================================================
   const handleTelemetryIngest = async (c: any) => {
+    const startTime = performance.now();
     try {
       const body = await c.req.json();
       const deviceCode = body.deviceId || body.device_id || body.deviceCode || body.sensorCode || 'DG-IOT-001';
@@ -71,66 +83,11 @@ export function createIoTRouter() {
 
       const nowIso = new Date().toISOString();
       const timestamp = body.timestamp || nowIso;
-
-      // 2. Tìm hoặc tự động liên kết thiết bị
-      let device = await get(c.env.DB, 'SELECT * FROM iot_devices WHERE device_code = ? OR id = ?', [deviceCode, deviceCode]);
-      if (!device) {
-        const newDevId = `dev-${crypto.randomUUID().substring(0, 8)}`;
-        await run(c.env.DB, `
-          INSERT INTO iot_devices (
-            id, device_code, name, location_text, latitude, longitude, status,
-            sensor_model, wifi_ssid, wifi_rssi, firmware_version, created_at, updated_at, last_reading_at
-          ) VALUES (?, ?, ?, ?, ?, ?, 'ONLINE', 'ASAIR APM2000', ?, ?, '1.2.0-esp32', ?, ?, ?)
-        `, [
-          newDevId,
-          deviceCode,
-          `DustGuard Node (${deviceCode})`,
-          'Đường Lê Văn Việt, Phường Tăng Nhơn Phú, TP. Thủ Đức, TP.HCM',
-          10.8450,
-          106.7790,
-          wifiSsid || 'Harry Maguire',
-          wifiRssi || -54,
-          nowIso,
-          nowIso,
-          nowIso
-        ]);
-        device = await get(c.env.DB, 'SELECT * FROM iot_devices WHERE id = ?', [newDevId]);
-      } else {
-        // Cập nhật trạng thái online và thời gian nhận dữ liệu cuối
-        await run(c.env.DB, `
-          UPDATE iot_devices
-          SET status = 'ONLINE',
-              last_reading_at = ?,
-              wifi_rssi = COALESCE(?, wifi_rssi),
-              wifi_ssid = COALESCE(?, wifi_ssid),
-              updated_at = ?
-          WHERE id = ?
-        `, [nowIso, wifiRssi, wifiSsid, nowIso, device.id]);
-      }
-
-      // 3. Ghi số đo vào CSDL SSOT
-      const readingId = `read-${crypto.randomUUID().substring(0, 12)}`;
-      await run(c.env.DB, `
-        INSERT INTO iot_readings (
-          id, device_id, timestamp, pm25, pm10, pm1, temperature, humidity, wifi_rssi, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `, [
-        readingId,
-        device.id,
-        timestamp,
-        rawPm25,
-        validPm10,
-        validPm1,
-        validTemp,
-        validHum,
-        wifiRssi,
-        nowIso
-      ]);
-
-      // Đồng bộ vào In-Memory Live State Store (Zero-D1 Reads cho polling)
       const nowEpoch = Date.now();
-      updateLiveState({
-        deviceId: device.device_code,
+
+      // 2. Cập nhật In-Memory Live State TRƯỚC TIÊN (0 D1 IOPS)
+      const { liveState, stateChanged, previousAnomalyState } = updateLiveState({
+        deviceId: deviceCode,
         pm1: validPm1 ?? Math.round(rawPm25 * 0.7),
         pm25: rawPm25,
         pm10: validPm10,
@@ -140,37 +97,215 @@ export function createIoTRouter() {
         lastSeen: nowEpoch,
         online: true
       });
-      if (device.id && device.id !== device.device_code) {
-        updateLiveState({
-          deviceId: device.id,
-          pm1: validPm1 ?? Math.round(rawPm25 * 0.7),
-          pm25: rawPm25,
-          pm10: validPm10,
-          temperature: validTemp ?? 28.5,
-          humidity: validHum ?? 65.0,
-          rssi: wifiRssi ?? -50,
-          lastSeen: nowEpoch,
-          online: true
-        });
+
+      const currentAnomaly = liveState.anomalyState;
+      const isNormal = currentAnomaly === 'NORMAL';
+      const wasNormal = previousAnomalyState === 'NORMAL';
+      const lastPersistTime = lastD1PersistMap.get(deviceCode) || 0;
+      const timeSinceLastPersist = lastPersistTime > 0 ? (nowEpoch - lastPersistTime) : 0;
+
+      // 3. Đánh giá State Transition & Tần suất sync
+      const isStateTransition = stateChanged && (
+        (!isNormal && wasNormal) ||
+        (isNormal && !wasNormal) ||
+        (currentAnomaly === 'HIGH_PM' || previousAnomalyState === 'HIGH_PM')
+      );
+
+      let shouldPersistToD1 = false;
+      let persistSource = 'normal_sync';
+
+      if (isStateTransition) {
+        shouldPersistToD1 = true;
+        persistSource = 'state_transition';
+      } else if (isNormal && wasNormal) {
+        if (lastPersistTime > 0 && timeSinceLastPersist >= NORMAL_SYNC_MS) {
+          shouldPersistToD1 = true;
+          persistSource = 'periodic_checkpoint';
+        } else {
+          // NORMAL và lần trước cũng là NORMAL VÀ dưới 5 phút: 0 D1 writes, 0 D1 reads!
+          shouldPersistToD1 = false;
+          persistSource = 'normal_sync';
+          if (lastPersistTime === 0) {
+            lastD1PersistMap.set(deviceCode, nowEpoch);
+          }
+        }
+      } else if (!isNormal) {
+        // Duy trì trạng thái bất thường: ghi checkpoint mỗi 1 phút
+        if (timeSinceLastPersist >= 60_000 || lastPersistTime === 0) {
+          shouldPersistToD1 = true;
+          persistSource = 'anomaly_reading';
+        }
       }
+
+      // 4. Zero-D1 Normal Sync: Tuyệt đối KHÔNG gọi D1 khi không cần thiết!
+      if (!shouldPersistToD1) {
+        const duration = Math.round(performance.now() - startTime);
+
+        // Structured console log JSON nhẹ
+        console.log(JSON.stringify({
+          event: "iot_cycle_summary",
+          device: deviceCode,
+          source: "normal_sync",
+          d1_reads: 0,
+          d1_writes: 0,
+          duration_ms: duration
+        }));
+
+        return c.json({
+          success: true,
+          mode: "live_sync",
+          message: "Telemetry updated in live state (0 D1 reads, 0 D1 writes)",
+          data: {
+            deviceId: deviceCode,
+            pm25: rawPm25,
+            pm10: validPm10,
+            pm1: validPm1,
+            temperature: validTemp,
+            humidity: validHum,
+            wifiRssi,
+            wifiSsid: wifiSsid || null,
+            status: 'ONLINE',
+            anomalyState: currentAnomaly,
+            receivedAt: nowIso
+          }
+        }, 200);
+      }
+
+      // 5. Persist D1 khi có State Transition hoặc Checkpoint định kỳ
+      let d1Reads = 0;
+      let d1Writes = 0;
+      let cachedDev = deviceMetaCache.get(deviceCode);
+
+      if (!cachedDev && c.env?.DB) {
+        d1Reads++;
+        let device = await get(c.env.DB, 'SELECT id, device_code, wifi_ssid FROM iot_devices WHERE device_code = ? OR id = ?', [deviceCode, deviceCode]);
+        if (!device) {
+          const newDevId = `dev-${crypto.randomUUID().substring(0, 8)}`;
+          d1Writes++;
+          await run(c.env.DB, `
+            INSERT INTO iot_devices (
+              id, device_code, name, location_text, latitude, longitude, status,
+              sensor_model, wifi_ssid, wifi_rssi, firmware_version, created_at, updated_at, last_reading_at
+            ) VALUES (?, ?, ?, ?, ?, ?, 'ONLINE', 'ASAIR APM2000', ?, ?, '1.2.0-esp32', ?, ?, ?)
+          `, [
+            newDevId,
+            deviceCode,
+            `DustGuard Node (${deviceCode})`,
+            'Đường Lê Văn Việt, Phường Tăng Nhơn Phú, TP. Thủ Đức, TP.HCM',
+            10.8450,
+            106.7790,
+            wifiSsid || 'Harry Maguire',
+            wifiRssi || -54,
+            nowIso,
+            nowIso,
+            nowIso
+          ]);
+          cachedDev = { id: newDevId, deviceCode, wifiSsid: wifiSsid || 'Harry Maguire' };
+        } else {
+          cachedDev = { id: device.id, deviceCode: device.device_code, wifiSsid: device.wifi_ssid };
+        }
+        deviceMetaCache.set(deviceCode, cachedDev);
+        if (cachedDev.id !== deviceCode) {
+          deviceMetaCache.set(cachedDev.id, cachedDev);
+        }
+      }
+
+      const targetDevId = cachedDev ? cachedDev.id : deviceCode;
+      const readingId = `read-${crypto.randomUUID().substring(0, 12)}`;
+
+      if (c.env?.DB) {
+        // Ghi 1 bản ghi vào iot_readings
+        d1Writes++;
+        await run(c.env.DB, `
+          INSERT INTO iot_readings (
+            id, device_id, timestamp, pm25, pm10, pm1, temperature, humidity, wifi_rssi, created_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          readingId,
+          targetDevId,
+          timestamp,
+          rawPm25,
+          validPm10,
+          validPm1,
+          validTemp,
+          validHum,
+          wifiRssi,
+          nowIso
+        ]);
+
+        // Ghi 1 bản ghi vào iot_events nếu phát hiện bất thường mới hoặc chuyển đổi trạng thái
+        if (isStateTransition) {
+          d1Writes++;
+          const eventId = `ev-${crypto.randomUUID().substring(0, 12)}`;
+          const isRecovery = currentAnomaly === 'NORMAL';
+          const eventType = isRecovery ? 'STATUS_RECOVERED' : (currentAnomaly === 'HIGH_PM' ? 'PM25_SPIKE' : `ANOMALY_${currentAnomaly}`);
+          const severity = isRecovery ? 'LOW' : (currentAnomaly === 'HIGH_PM' ? 'CRITICAL' : 'HIGH');
+          const msg = isRecovery
+            ? `Chất lượng không khí đã hồi phục mức bình thường (${rawPm25} µg/m³)`
+            : `Cảnh báo nồng độ PM2.5 vượt ngưỡng (${rawPm25} µg/m³) - Trạng thái: ${currentAnomaly}`;
+
+          await run(c.env.DB, `
+            INSERT INTO iot_events (
+              id, device_id, event_type, value, threshold, message, timestamp, acknowledged, severity, created_at
+            ) VALUES (?, ?, ?, ?, 75, ?, ?, ?, ?, ?)
+          `, [
+            eventId,
+            targetDevId,
+            eventType,
+            rawPm25,
+            msg,
+            nowIso,
+            isRecovery ? 1 : 0,
+            severity,
+            nowIso
+          ]);
+        }
+
+        // Cập nhật trạng thái trạm
+        d1Writes++;
+        await run(c.env.DB, `
+          UPDATE iot_devices
+          SET status = 'ONLINE',
+              last_reading_at = ?,
+              wifi_rssi = COALESCE(?, wifi_rssi),
+              wifi_ssid = COALESCE(?, wifi_ssid),
+              updated_at = ?
+          WHERE id = ?
+        `, [nowIso, wifiRssi, wifiSsid, nowIso, targetDevId]);
+      }
+
+      lastD1PersistMap.set(deviceCode, nowEpoch);
+      const duration = Math.round(performance.now() - startTime);
+
+      console.log(JSON.stringify({
+        event: "iot_cycle_summary",
+        device: deviceCode,
+        source: persistSource,
+        d1_reads: d1Reads,
+        d1_writes: d1Writes,
+        duration_ms: duration
+      }));
 
       return c.json({
         success: true,
-        message: 'Telemetry received successfully',
+        mode: "live_sync",
+        message: persistSource === 'state_transition' ? 'State transition recorded to D1' : 'Periodic reading persisted to D1',
         data: {
           readingId,
-          deviceId: device.device_code,
+          deviceId: deviceCode,
           pm25: rawPm25,
           pm10: validPm10,
           pm1: validPm1,
           temperature: validTemp,
           humidity: validHum,
           wifiRssi,
-          wifiSsid: wifiSsid || device.wifi_ssid,
+          wifiSsid: wifiSsid || (cachedDev ? cachedDev.wifiSsid : null),
           status: 'ONLINE',
+          anomalyState: currentAnomaly,
           receivedAt: nowIso
         }
-      }, 201);
+      }, 200);
+
     } catch (err: any) {
       console.error('[IoT Ingest Error]:', err);
       return c.json({

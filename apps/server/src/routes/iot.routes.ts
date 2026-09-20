@@ -232,6 +232,7 @@ const handleGetLatest = (req: Request, res: Response): void => {
 };
 
 iotRouter.get('/latest', handleGetLatest);
+iotRouter.get('/live', handleGetLatest);
 iotRouter.get('/telemetry', handleGetLatest);
 iotRouter.get('/reading', handleGetLatest);
 
@@ -296,7 +297,74 @@ iotRouter.get('/device/:id', (req: Request, res: Response): void => {
 });
 
 // ============================================================================
-// 4. GET ALL DEVICES (GET /api/iot/devices)
+// 4. GET HISTORICAL TELEMETRY (GET /api/iot/history/:deviceId)
+// ============================================================================
+iotRouter.get('/history/:deviceId', (req: Request, res: Response): void => {
+  try {
+    const idOrCode = req.params.deviceId;
+    const device = sqliteClient.get<any>(
+      'SELECT id, device_code FROM iot_devices WHERE id = ? OR device_code = ? LIMIT 1',
+      [idOrCode, idOrCode]
+    );
+
+    if (!device) {
+      res.status(404).json({
+        success: false,
+        error: { code: 'DEVICE_NOT_FOUND', message: 'Không tìm thấy thiết bị quan trắc.' }
+      });
+      return;
+    }
+
+    const range = String(req.query.range || '24h').toLowerCase();
+    const durationMs = range === '1h'
+      ? 60 * 60 * 1000
+      : range === '7d' || range === '7days'
+        ? 7 * 24 * 60 * 60 * 1000
+        : 24 * 60 * 60 * 1000;
+    const sinceIso = new Date(Date.now() - durationMs).toISOString();
+    const requestedLimit = Number.parseInt(String(req.query.limit || '50'), 10);
+    const limit = Math.min(200, Math.max(1, Number.isFinite(requestedLimit) ? requestedLimit : 50));
+
+    const readingsDesc = sqliteClient.all<any>(`
+      SELECT id, timestamp, pm25, pm10, pm1, temperature, humidity, wifi_rssi, created_at
+      FROM iot_readings
+      WHERE device_id = ? AND created_at >= ?
+      ORDER BY created_at DESC, timestamp DESC
+      LIMIT ?
+    `, [device.id, sinceIso, limit]);
+
+    const readings = readingsDesc.map((reading) => ({
+      id: reading.id,
+      timestamp: reading.timestamp,
+      pm25: reading.pm25,
+      pm10: reading.pm10,
+      pm1: reading.pm1,
+      temperature: reading.temperature,
+      humidity: reading.humidity,
+      wifiRssi: reading.wifi_rssi,
+      createdAt: reading.created_at
+    }));
+    const history = [...readings].reverse();
+
+    res.json({
+      success: true,
+      data: {
+        deviceId: device.device_code,
+        range,
+        since: sinceIso,
+        limit,
+        count: readings.length,
+        readings,
+        history
+      }
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: { message: err.message } });
+  }
+});
+
+// ============================================================================
+// 5. GET ALL DEVICES (GET /api/iot/devices)
 // ============================================================================
 iotRouter.get('/devices', (req: Request, res: Response): void => {
   try {
@@ -322,7 +390,7 @@ iotRouter.get('/devices', (req: Request, res: Response): void => {
 });
 
 // ============================================================================
-// 5. UPDATE DEVICE (PATCH /api/iot/device/:id)
+// 6. UPDATE DEVICE (PATCH /api/iot/device/:id)
 // ============================================================================
 iotRouter.patch('/device/:id', (req: Request, res: Response): void => {
   try {
@@ -356,7 +424,7 @@ iotRouter.patch('/device/:id', (req: Request, res: Response): void => {
 });
 
 // ============================================================================
-// 6. UPDATE WI-FI CONFIG (POST /api/iot/wifi)
+// 7. UPDATE WI-FI CONFIG (POST /api/iot/wifi)
 // ============================================================================
 iotRouter.post('/wifi', (req: Request, res: Response): void => {
   try {

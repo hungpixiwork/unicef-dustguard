@@ -28,6 +28,10 @@ constexpr uint32_t TELEMETRY_UPLOAD_INTERVAL_MS   = 15000;   // Gửi dữ liệ
 constexpr uint32_t WIFI_RECONNECT_INTERVAL_MS     = 10000;   // Thử kết nối lại Wi-Fi mỗi 10 giây
 constexpr uint32_t NTP_SYNC_INTERVAL_MS           = 3600000; // Đồng bộ lại NTP mỗi 1 giờ
 constexpr uint32_t HTTP_TIMEOUT_MS                = 8000;    // Timeout request HTTP/HTTPS
+constexpr uint8_t  MAX_BUFFERED_READINGS          = 30;      // Bộ đệm tối đa 7,5 phút ở chu kỳ upload 15 giây
+constexpr uint32_t RETRY_DELAY_INITIAL_MS          = 5000;    // Retry đầu tiên sau 5 giây
+constexpr uint32_t RETRY_DELAY_MAX_MS              = 60000;   // Giới hạn backoff 60 giây
+constexpr uint8_t  RETRY_MULTIPLIER                = 2;
 
 // ==========================================
 // Sensor & Quality Control Constraints
@@ -35,6 +39,7 @@ constexpr uint32_t HTTP_TIMEOUT_MS                = 8000;    // Timeout request 
 constexpr float PHYSICAL_MIN_PM                   = 0.0f;    // Ngưỡng vật lý tối thiểu
 constexpr float PHYSICAL_MAX_PM                   = 2500.0f; // Ngưỡng vật lý tối đa (µg/m³)
 constexpr uint8_t SENSOR_MAX_CONSECUTIVE_FAILURES = 5;       // Ngưỡng lỗi liên tiếp để báo SENSOR_FAULT
+constexpr uint8_t ROLLING_AVG_SAMPLES             = 5;       // Bộ lọc trung bình trượt 5 mẫu
 constexpr uint16_t ROLLING_BUFFER_1M_SIZE         = 30;      // 30 mẫu @ 2s = 60s (1 phút)
 constexpr uint16_t ROLLING_BUFFER_5M_SIZE         = 150;     // 150 mẫu @ 2s = 300s (5 phút)
 constexpr uint8_t GRAPH_POINTS_MAX                = 60;      // Số điểm vẽ mini-graph realtime
@@ -50,6 +55,10 @@ constexpr float RAPID_RISE_RATE_PER_MIN           = 15.0f;   // Tốc độ tăn
 // ==========================================
 // Touchscreen Display Parameters (TFT 320x240 / 480x320)
 // ==========================================
+constexpr uint16_t SCREEN_WIDTH                   = 128;
+constexpr uint16_t SCREEN_HEIGHT                  = 64;
+constexpr uint8_t OLED_I2C_ADDRESS                = 0x3C;
+constexpr uint8_t DISPLAY_PAGE_DURATION_SEC       = 5;
 constexpr uint16_t TFT_SCREEN_WIDTH               = 320;
 constexpr uint16_t TFT_SCREEN_HEIGHT              = 240;
 constexpr uint16_t TOUCH_MIN_HIT_TARGET_PX        = 44;      // Touch target tối thiểu 44px
@@ -69,10 +78,10 @@ constexpr uint16_t COLOR_MUTED_TEXT               = 0x632C;  // Chữ xám mờ 
 // ==========================================
 // Cloud Backend Endpoints & QR Configuration
 // ==========================================
-#define API_BASE_URL_DEFAULT    "https://dustguard.phamphunguyenhung.com"
-#define API_TELEMETRY_PATH      "/api/iot/telemetry"
+#define API_BASE_URL_DEFAULT    "https://dust-guard-vn.hungphamphunguyen.workers.dev"
+#define API_TELEMETRY_PATH_DEFAULT "/api/iot/telemetry"
 #define API_REPORT_PATH         "/api/reports"
-#define WEB_CASE_URL_PREFIX     "https://dustguard.phamphunguyenhung.com/cases/"
+#define WEB_CASE_URL_PREFIX     "https://dust-guard-vn.hungphamphunguyen.workers.dev/cases/"
 
 // ==========================================
 // Network & NTP Configuration
@@ -84,4 +93,3 @@ constexpr long GMT_OFFSET_SEC   = 25200;                     // GMT+7 Việt Nam
 constexpr int  DAYLIGHT_OFFSET  = 0;
 
 #endif // DUSTGUARD_CONFIG_H
-

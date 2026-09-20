@@ -34,9 +34,9 @@ enum class AqiStandard : uint8_t {
  */
 enum class TrendState : uint8_t {
     STABLE,     // Ổn định
-    RISING,     // Đang tăng
+    INCREASING, // Đang tăng
     RAPID_RISE, // Tăng nhanh đột biến
-    FALLING     // Đang giảm
+    DECREASING  // Đang giảm
 };
 
 /**
@@ -45,7 +45,7 @@ enum class TrendState : uint8_t {
 enum class DustEventSeverity : uint8_t {
     NORMAL,         // Bình thường
     ELEVATED,       // Mức tăng vừa
-    HIGH,           // Mức cao
+    HIGH_LEVEL,     // Mức cao
     SPIKE,          // Đột biến tức thì (Spike)
     SUSTAINED_HIGH  // Cao liên tục kéo dài
 };
@@ -239,4 +239,3 @@ struct HealthMetrics {
 };
 
 #endif // DUSTGUARD_TYPES_H
-

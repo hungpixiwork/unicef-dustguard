@@ -26,7 +26,7 @@ void EventDetector::evaluate(const SensorReading &reading, DerivedMetrics &metri
 
     // 3. Mức High
     if (pm25 >= 150.0f) {
-        metrics.eventState = DustEventSeverity::HIGH;
+        metrics.eventState = DustEventSeverity::HIGH_LEVEL;
         snprintf(metrics.eventDescription, sizeof(metrics.eventDescription),
                  "Chi so PM2.5 o muc o nhiem cao (%.0f ug/m3)", pm25);
         return;

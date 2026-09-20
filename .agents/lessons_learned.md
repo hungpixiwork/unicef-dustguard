@@ -3,6 +3,56 @@
 > **Kho lưu trữ kinh nghiệm, bài học kiến trúc và phòng chống lỗi kỹ thuật (Anti-Regression)**  
 > *Cập nhật sau mỗi chu trình phát triển tính năng mới thành công.*
 
+### 31. Xác Thực Cloudflare Account ID & Resource ID Khi Deploy Wrangler Production
+- **Bối cảnh & Sự cố**:
+  - Khi chạy `wrangler d1 list` hoặc `wrangler deploy`, Wrangler báo lỗi `Authentication error [code: 10000]` do trường `account_id` trong `wrangler.jsonc` không khớp với tài khoản OAuth đã đăng nhập trên máy (`ppnh10092002@gmail.com` sở hữu account ID `5fdd1d1433519df6429d7418d43fff9a`).
+  - Thêm vào đó, `database_id` của D1 và danh sách `r2_buckets` bị cấu hình sai lệch, có nguy cơ làm gãy các binding runtime (`DB`, `STORAGE`, `EVIDENCE_BUCKET`) và endpoint kiểm tra sức khỏe `/api/system/health`.
+- **Giải pháp & Nguyên tắc**:
+  1. Luôn dùng `npx wrangler whoami` để đối chiếu chính xác Account ID trước khi ghi vào `wrangler.jsonc`.
+  2. Sử dụng `npx wrangler d1 list` để lấy UUID chuẩn của CSDL production (`ad40205a-ec4b-40f3-8ab2-c2e7b9e78699` cho `dustguard-production`).
+  3. Bảo tồn đầy đủ các binding R2 (`dustguard-storage`) và route custom domain (`dustguard.phamphunguyenhung.com`).
+  4. Sau khi deploy, lập tức xác thực runtime thực tế: `/api/system/version` (commit hash, build time), `/api/system/health` (`database: ok, storage: ok`), Side A `/`, Side B `/operations/`, và luồng IoT ingestion (`mode: live_sync`).
+
+### 30. Zero-D1 Normal Sync & Xử Lý Chuyển Đổi Trạng Thái Ingestion Telemetry (Subagent 02)
+- **Bối cảnh & Vấn đề**:
+  - Telemetry từ trạm IoT (ESP32 + cảm biến APM2000) gửi định kỳ lên backend (`POST /api/iot/reading`, `/telemetry`, `/ingest`).
+  - Trước đây, mỗi nhịp telemetry gửi đến đều thực hiện 1 SELECT `iot_devices`, 1 UPDATE `iot_devices` và 1 INSERT `iot_readings` vào CSDL D1. Với tần suất gửi thường xuyên, hàng chục ngàn writes và reads bị tiêu hao vào D1 chỉ để lưu các giá trị đo bình thường (NORMAL), gây cạn kiệt D1 quota và vượt ngưỡng trần 5M reads / 100k writes của Free Tier.
+- **Giải pháp kiến trúc SSOT**:
+  1. **Cập nhật Live State In-Memory Trước Tiên**:
+     - Khi nhận telemetry, hệ thống gọi `updateLiveState()` vào in-memory store (`server/iot-live-state.ts`) trước.
+     - Xác định `currentAnomalyState`, `previousAnomalyState` và `stateChanged`.
+  2. **Quy tắc Zero-D1 Normal Sync**:
+     - Nếu trạng thái là NORMAL và lần trước cũng là NORMAL VÀ khoảng cách giữa 2 lần persist < 5 phút (`NORMAL_SYNC_MS = 300_000`): **TUYỆT ĐỐI KHÔNG GHI VÀO D1 (0 D1 writes, 0 D1 reads)**!
+     - Trả về HTTP 200 `{ success: true, mode: "live_sync" }` ngay lập tức, latency < 2ms.
+  3. **Xử Lý Chuyển Đổi Trạng Thái (State Transition)**:
+     - Chỉ khi phát hiện bất thường mới (NORMAL -> HIGH_PM) hoặc chuyển đổi trạng thái (HIGH_PM -> NORMAL hồi phục): Ghi 1 bản ghi vào `iot_events` (PM25_SPIKE hoặc STATUS_RECOVERED) và 1 bản ghi vào `iot_readings`.
+     - Bộ đệm `deviceMetaCache` in-memory giúp tái sử dụng `device_id` đã biết, triệt tiêu câu lệnh SELECT từ D1 khi persist.
+  4. **Checkpoint Định Kỳ 5 Phút**:
+     - Nếu dữ liệu bình thường kéo dài quá 5 phút, ghi 1 bản ghi checkpoint vào `iot_readings` để bảo tồn chuỗi thời gian dài hạn.
+  5. **Structured Console Logging Tối Giản**:
+     - Thay thế việc ghi log vào DB bằng console log JSON có cấu trúc:
+       `{"event":"iot_cycle_summary","device":"DG-IOT-001","source":"normal_sync","d1_reads":0,"d1_writes":0,"duration_ms":duration}`.
+
+
+### 29. Thiết Kế Chu Kỳ Đồng Bộ Firmware IoT Tiết Kiệm Năng Lượng (5 Phút) Kết Hợp Đẩy Bất Thường Tức Thì (Immediate Anomaly Push) & Bộ Lọc Chống Spam Cloud (Subagent 08)
+- **Bối cảnh & Vấn đề**:
+  - Vi điều khiển ngoài hiện trường (ESP32 kết nối cảm biến bụi quang học APM2000) thường vận hành bằng pin hoặc sạc dự phòng. Nếu truyền sóng Wi-Fi liên tục ở mỗi nhịp đọc cảm biến (ví dụ 1.5 - 3.5 giây/lần), năng lượng pin sẽ cạn kiệt rất nhanh, đồng thời gây ra hàng trăm ngàn lượt gọi API và nguy cơ vượt hạn mức D1 quota.
+  - Ngược lại, nếu chỉ gửi định kỳ 5 phút một lần một cách cứng nhắc, khi xảy ra sự cố ô nhiễm đột ngột (cháy rác, nồng độ PM2.5 vọt cao > 50 µg/m³ hoặc đột biến > 25 µg/m³), hệ thống cảnh báo sớm và đội phản ứng nhanh sẽ bị chậm trễ tới 5 phút.
+- **Giải pháp kiến trúc SSOT**:
+  1. **Tách biệt chu kỳ đo cục bộ và chu kỳ truyền dữ liệu**:
+     - *Đo cục bộ*: 3 giây/lần (`SENSOR_READ_INTERVAL_MS = 3000`), không bật kết nối mạng, xử lý tín hiệu UART 1200 baud hoàn toàn non-blocking.
+     - *Đồng bộ bình thường (`NORMAL_SYNC_INTERVAL_MS`)*: 300.000 ms (5 phút/lần) khi chất lượng không khí an toàn và ổn định.
+  2. **Cơ chế Immediate Anomaly Push**:
+     - Kích hoạt gửi ngay lập tức khi phát hiện một trong hai điều kiện:
+       + `pm25 > 50` (vượt quy chuẩn QCVN 05:2023).
+       + `abs(pm25 - last_reported_pm25) > 25` (nồng độ biến thiên đột ngột so với mốc gửi trước đó).
+  3. **Bộ lọc chống spam cloud (Throttling / Cooldown Debounce)**:
+     - Khi nồng độ ô nhiễm kéo dài liên tục trên 50 µg/m³, nếu không có cooldown thì mỗi chu kỳ 3s vi điều khiển sẽ lại gửi 1 lần.
+     - Thiết lập `MIN_ANOMALY_INTERVAL_MS = 15000` (15 giây cooldown tối thiểu giữa 2 lần đẩy Anomaly). Đảm bảo cập nhật kịp thời nhịp cảnh báo nhưng triệt tiêu hoàn toàn nguy cơ spam dồn dập máy chủ.
+  4. **Payload JSON chuẩn hóa**:
+     - Định dạng JSON tinh gọn: `{"deviceId":"DG-IOT-001","pm1":8,"pm25":14,"pm10":22,"temperature":28.5,"humidity":65.0,"rssi":-68,"isAnomaly":false,"timestamp":1726800000}`.
+     - Đóng kết nối `http.end()` giải phóng socket, chớp LED 40ms báo hiệu, tối ưu năng lượng tối đa.
+
 ### 28. Tách Biệt Lịch Sử Đo Đạc (On-Demand Historical API) & Cô Lập Truy Vấn (Query Isolation) Bảo Vệ Bởi Index (Subagent 04)
 - **Bối cảnh & Vấn đề phát sinh**:
   - `GET /api/iot/device/:id` trước đây nạp sẵn 50 dòng lịch sử từ `iot_readings`. Khi client polling trạng thái trạm đo mỗi 3-15 giây, SQLite/D1 phải đọc 50 rows liên tục, gây tiêu hao hàng triệu rows read/ngày mà hầu như người dùng không xem biểu đồ.

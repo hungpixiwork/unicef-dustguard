@@ -121,9 +121,9 @@ void RollingStats::compute(DerivedMetrics &metrics) {
     if (metrics.rateOfChange >= RAPID_RISE_RATE_PER_MIN) {
         metrics.trend = TrendState::RAPID_RISE;
     } else if (metrics.rateOfChange >= 3.0f) {
-        metrics.trend = TrendState::RISING;
+        metrics.trend = TrendState::INCREASING;
     } else if (metrics.rateOfChange <= -3.0f) {
-        metrics.trend = TrendState::FALLING;
+        metrics.trend = TrendState::DECREASING;
     } else {
         metrics.trend = TrendState::STABLE;
     }

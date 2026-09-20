@@ -12,7 +12,7 @@
 // ==========================================
 // Địa chỉ Cloud API hoặc máy chủ cục bộ thử nghiệm
 #define API_BASE_URL            "https://dustguard-api.unicef.workers.dev"
-#define API_TELEMETRY_PATH      "/api/sensors/reading"
+#define API_TELEMETRY_PATH      "/api/iot/telemetry"
 
 // ==========================================
 // Device Identity & HMAC Pre-Shared Key (SSOT)

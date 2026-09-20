@@ -7,6 +7,39 @@
 
 ## 📅 Các Mốc Phát Triển Chính (Milestones)
 
+### 35. [2026-09-20] `feat-prod-deploy-unified-worker-and-zero-d1`: Deploy Production Cloudflare Worker & Static Assets (Custom Domain)
+- **Bối cảnh & Xử lý**:
+  - Khắc phục cấu hình `wrangler.jsonc`: sửa `account_id` đúng (`5fdd1d1433519df6429d7418d43fff9a`), phục hồi `database_id: ad40205a-ec4b-40f3-8ab2-c2e7b9e78699`, R2 buckets `dustguard-storage`, và route custom domain `dustguard.phamphunguyenhung.com`.
+  - Build thành công toàn bộ static assets Side A (`apps/web`) và Side B Operations (`dustguard-operations/apps/web`) hợp nhất vào `dist/`.
+  - Deploy thành công lên Cloudflare Workers (`dust-guard-vn`, Version ID: `0465cfc3-d0fd-4784-a990-8a2c88c81f72`).
+- **Nghiệm thu Runtime Production**:
+  - `GET /api/system/version`: HTTP 200 (commit `dcae2088...`, buildTime `2026-09-20T04:34:51.035Z`).
+  - `GET /api/system/health`: HTTP 200 (`status: "ok"`, `database: "ok"`, `storage: "ok"`).
+  - `GET /`: HTTP 200 (Side A Community Portal).
+  - `GET /operations/`: HTTP 200 (Side B Operations Command Center).
+  - `POST /api/iot/telemetry`: HTTP 200, chế độ `live_sync` đạt chuẩn 0 D1 reads, 0 D1 writes.
+  - `GET /api/iot/live`: HTTP 200, phản hồi trực tiếp từ In-Memory Live State Store.
+
+### 34. [2026-09-20] `feat-worker-zero-d1-normal-sync-and-state-transition`: Triển Khai Xử Lý Ingestion Telemetry Chuẩn Zero-D1 Normal Sync, State Transition & Structured Logging (Subagent 02)
+- **Bối cảnh & Vấn đề**:
+  - Telemetry gửi về từ ESP32 APM2000 (`POST /api/iot/reading`, `/telemetry`, `/ingest`) trước đây kích hoạt 1 SELECT và 2 INSERT/UPDATE vào CSDL D1 ở mọi chu kỳ.
+  - Điều này gây lãng phí D1 write/read quota chỉ để lưu các giá trị đo bình thường (NORMAL).
+- **Phạm vi hoàn tất**:
+  1. **Tích hợp `updateLiveState()`**:
+     - Cập nhật trực tiếp vào in-memory store isolate trước tiên, lấy trạng thái sống và nhận diện chuyển đổi trạng thái `stateChanged`.
+  2. **Quy tắc Zero-D1 Normal Sync**:
+     - Khi trạng thái là NORMAL và lần trước cũng là NORMAL VÀ dưới 5 phút (`NORMAL_SYNC_MS = 300_000`): **0 D1 writes, 0 D1 reads**.
+     - Endpoint trả về HTTP 200 `{ success: true, mode: "live_sync" }`.
+  3. **State Transition & Periodic Checkpoint**:
+     - Chỉ khi chuyển đổi trạng thái (NORMAL -> HIGH_PM, hoặc hồi phục HIGH_PM -> NORMAL): Ghi 1 bản ghi vào `iot_events` và `iot_readings`.
+     - Định kỳ sau 5 phút: Ghi 1 bản ghi checkpoint vào `iot_readings` để bảo tồn lịch sử dài hạn.
+     - `deviceMetaCache` in-memory triệt tiêu câu lệnh SELECT từ D1 khi persist.
+  4. **Structured Logging JSON**:
+     - In log JSON nhẹ: `{"event":"iot_cycle_summary","device":"DG-IOT-001","source":"normal_sync","d1_reads":0,"d1_writes":0,"duration_ms":duration}`.
+  5. **Nghiệm thu kiểm thử**:
+     - `node --test tests/iot-zero-d1-normal-sync.test.js`: 8/8 tests PASS 100% (75ms).
+     - `npm --prefix app run verify:quick`: 30/30 test suites PASS, 5/5 UI smoke tests PASS.
+
 ### 33. [2026-09-20] `feat-esp32-apm2000-anomaly-push-and-5min-sync`: Cấu Hình Firmware ESP32 APM2000 Chu Kỳ 5 Phút, Immediate Anomaly Push & Chống Spam Cloud (Subagent 08)
 - **Bối cảnh & Nhiệm vụ**:
   - Tối ưu hóa chu kỳ truyền sóng của vi điều khiển ESP32 và cảm biến bụi ASAIR APM2000 (`DG-IOT-001`) để tiết kiệm pin/băng thông và không làm cạn kiệt Cloudflare D1 quota.

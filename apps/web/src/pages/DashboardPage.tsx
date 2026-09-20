@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiRequest } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.js';
@@ -7,7 +7,6 @@ import { LoadingSkeleton } from '../components/common/LoadingSkeleton.js';
 import { useGeolocation } from '../hooks/useGeolocation.js';
 import { useIoTLiveState } from '../hooks/useIoTLiveState.js';
 import { reverseGeocode } from '../services/geocoding.js';
-import { calculateDistance, formatDistance } from '../utils/geo.js';
 import {
   Camera,
   Search,
@@ -25,8 +24,7 @@ import {
   CheckCircle,
   Zap,
   PlusCircle,
-  RefreshCw,
-  Navigation
+  RefreshCw
 } from 'lucide-react';
 
 interface DashboardResponse {
@@ -102,32 +100,6 @@ export const DashboardPage: React.FC = () => {
       clearTimeout(timer);
     };
   }, [userLocation?.latitude, userLocation?.longitude]);
-
-  // Vị trí node cảm biến thật (Lấy từ API device hoặc fallback tọa độ thực của node)
-  const nodeLocation = useMemo(() => {
-    return {
-      latitude: iotData?.device?.latitude ?? 10.8450,
-      longitude: iotData?.device?.longitude ?? 106.7790,
-      address: iotData?.device?.locationText || 'Đường Lê Văn Việt, Phường Tăng Nhơn Phú, TP. Thủ Đức, TP.HCM',
-      name: iotData?.device?.name || 'Trạm quan trắc Lê Văn Việt'
-    };
-  }, [iotData?.device]);
-
-  // Helper tính khoảng cách trắc địa từ USER GPS thật tới NODE
-  const getDistanceText = () => {
-    if (!userLocation) {
-      if (geoPermission === 'denied') return 'Chưa có vị trí';
-      if (geoLoading) return 'Đang tính...';
-      return 'Chưa xác định';
-    }
-    const meters = calculateDistance(
-      userLocation.latitude,
-      userLocation.longitude,
-      nodeLocation.latitude,
-      nodeLocation.longitude
-    );
-    return formatDistance(meters);
-  };
 
   // Fetch dữ liệu Dashboard cộng đồng
   useEffect(() => {
@@ -239,11 +211,6 @@ export const DashboardPage: React.FC = () => {
                   <span className="text-slate-900 font-extrabold">
                     {userAddress || 'Vị trí trực tiếp của bạn'}
                   </span>
-                  <span className="text-slate-400 font-normal">·</span>
-                  <span className="text-teal-800 font-extrabold bg-teal-50 px-2 py-0.5 rounded border border-teal-200 text-[11px] inline-flex items-center gap-1">
-                    <Navigation className="w-3 h-3 text-teal-700" />
-                    {getDistanceText()} đến trạm đo
-                  </span>
                   {userLocation.accuracy > 1000 && (
                     <span className="text-slate-500 font-normal text-[11px]">
                       (Vị trí gần đúng)
@@ -353,18 +320,11 @@ export const DashboardPage: React.FC = () => {
                 </div>
 
                 <div className="space-y-1 text-xs text-slate-600">
-                  <div className="flex items-center justify-between gap-1.5 font-bold text-slate-900">
-                    <div className="flex items-center gap-1.5 truncate">
-                      <MapPin className="w-3.5 h-3.5 text-[#B51F24] shrink-0" />
-                      <span className="truncate">{nodeLocation.name}</span>
+                  {iotData.device?.name && (
+                    <div className="font-bold text-slate-900 truncate">
+                      {iotData.device.name}
                     </div>
-                    <span className="shrink-0 text-[11px] font-black text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
-                      {getDistanceText()}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-slate-500 truncate pl-5">
-                    {nodeLocation.address}
-                  </div>
+                  )}
                   <div className="flex items-center gap-1.5 text-slate-600 font-medium text-[11px] pt-1 border-t border-stone-200">
                     <Clock className="w-3 h-3 shrink-0" />
                     <span>
@@ -391,7 +351,9 @@ export const DashboardPage: React.FC = () => {
               </>
             ) : iotData?.isOnline && !iotData?.telemetry ? (
               <div className="py-4 text-center space-y-2">
-                <div className="text-xs font-bold text-slate-800">DustGuard Demo Node</div>
+                {iotData.device?.name && (
+                  <div className="text-xs font-bold text-slate-800">{iotData.device.name}</div>
+                )}
                 <div className="text-xs text-teal-700 flex items-center justify-center gap-1.5">
                   <RefreshCw className="w-3.5 h-3.5 animate-spin text-teal-700" />
                   <span>Đang chờ cảm biến ổn định</span>
@@ -400,7 +362,10 @@ export const DashboardPage: React.FC = () => {
             ) : (
               <div className="py-4 text-center space-y-2">
                 <div className="text-xs font-bold text-slate-800">
-                  {iotData?.device?.name || 'DustGuard Demo Node'} - Offline - Lần cuối kết nối {iotData?.device?.secondsAgo != null ? Math.floor(iotData.device.secondsAgo / 60) : 0} phút trước
+                  {iotData?.device?.name || 'Thiết bị DustGuard'} · Ngoại tuyến
+                  {iotData?.device?.secondsAgo != null
+                    ? ` · Lần cuối kết nối ${Math.floor(iotData.device.secondsAgo / 60)} phút trước`
+                    : ''}
                 </div>
                 <div className="text-xs text-slate-500">
                   Đang chờ dữ liệu cảm biến
@@ -525,11 +490,12 @@ export const DashboardPage: React.FC = () => {
           </Link>
         </div>
 
-        {/* 3 Highlight Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+        <div className="pt-1">
           <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold text-slate-900">{nodeLocation.name}</span>
+              <span className="text-xs font-extrabold text-slate-900">
+                {iotData?.device?.name || 'Thiết bị DustGuard'}
+              </span>
               {iotData?.isOnline && iotData?.telemetry ? (
                 <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
                   {Math.round(iotData.telemetry.pm25)} µg/m³
@@ -541,24 +507,8 @@ export const DashboardPage: React.FC = () => {
               )}
             </div>
             <p className="text-[11px] text-slate-500 font-medium">
-              {nodeLocation.address} · Cảm biến thật
+              Dữ liệu từ cảm biến không khí
             </p>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold text-slate-900">Trục Láng Hạ - Huỳnh Thúc Kháng</span>
-              <span className="text-[11px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">Giám sát</span>
-            </div>
-            <p className="text-[11px] text-slate-500 font-medium">Phường Láng Hạ, Hà Nội · Khu vực kiểm soát bụi giao thông</p>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold text-slate-900">Khu vực Chùa Láng</span>
-              <span className="text-[11px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">Giám sát</span>
-            </div>
-            <p className="text-[11px] text-slate-500 font-medium">Phường Láng Thượng, Hà Nội · Công trình tuân thủ che chắn</p>
           </div>
         </div>
       </section>

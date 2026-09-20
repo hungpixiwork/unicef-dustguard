@@ -91,7 +91,7 @@ void TouchRouter::renderScreenLive(ITouchDisplay &gfx, const SensorReading &read
     // Xu hướng Trend bên phải
     char trendBuf[32];
     snprintf(trendBuf, sizeof(trendBuf), "%+.0f ug/min", metrics.rateOfChange);
-    uint16_t trendColor = (metrics.trend == TrendState::RAPID_RISE || metrics.trend == TrendState::RISING) ? TouchTheme::CRIMSON_ALERT : TouchTheme::TEAL_PRIMARY;
+    uint16_t trendColor = (metrics.trend == TrendState::RAPID_RISE || metrics.trend == TrendState::INCREASING) ? TouchTheme::CRIMSON_ALERT : TouchTheme::TEAL_PRIMARY;
     gfx.drawText(200, 39, trendBuf, trendColor, 1);
 
     // HERO VALUE: PM2.5

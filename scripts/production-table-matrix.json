@@ -1,0 +1,356 @@
+[
+  {
+    "table": "system_configs",
+    "tier": "MUST KEEP",
+    "rows": 3,
+    "desc": "Cấu hình hệ thống tĩnh và quy chuẩn QCVN"
+  },
+  {
+    "table": "contractors",
+    "tier": "MUST KEEP",
+    "rows": 5,
+    "desc": "Danh bạ nhà thầu / đơn vị thi công xây dựng"
+  },
+  {
+    "table": "projects",
+    "tier": "MUST KEEP",
+    "rows": 6,
+    "desc": "Danh mục công trình đô thị đang theo dõi"
+  },
+  {
+    "table": "users",
+    "tier": "MUST KEEP",
+    "rows": 35,
+    "desc": "Tài khoản người dân, TNV, điều phối viên cộng đồng"
+  },
+  {
+    "table": "cases",
+    "tier": "MUST KEEP",
+    "rows": 28,
+    "desc": "Hồ sơ sự vụ bụi mịn Side A"
+  },
+  {
+    "table": "reports",
+    "tier": "MUST KEEP",
+    "rows": 64,
+    "desc": "Báo cáo phản ánh ô nhiễm từ người dân"
+  },
+  {
+    "table": "report_media",
+    "tier": "MUST KEEP",
+    "rows": 44,
+    "desc": "Hình ảnh / bằng chứng số kèm mã băm SHA-256 của báo cáo"
+  },
+  {
+    "table": "case_reports",
+    "tier": "MUST KEEP",
+    "rows": 49,
+    "desc": "Liên kết phản ánh - hồ sơ sự vụ"
+  },
+  {
+    "table": "observations",
+    "tier": "MUST KEEP",
+    "rows": 54,
+    "desc": "Nhật ký quan trắc hiện trường cộng đồng"
+  },
+  {
+    "table": "observation_media",
+    "tier": "MUST KEEP",
+    "rows": 21,
+    "desc": "Minh chứng hình ảnh quan trắc"
+  },
+  {
+    "table": "confirmations",
+    "tier": "MUST KEEP",
+    "rows": 115,
+    "desc": "Đồng thuận cộng đồng (Upvote/Xác nhận)"
+  },
+  {
+    "table": "saved_cases",
+    "tier": "MUST KEEP",
+    "rows": 3,
+    "desc": "Danh sách hồ sơ người dùng lưu trữ theo dõi"
+  },
+  {
+    "table": "case_updates",
+    "tier": "CAN ARCHIVE",
+    "rows": 29,
+    "desc": "Cập nhật tiến độ xử lý hồ sơ"
+  },
+  {
+    "table": "verification_tasks",
+    "tier": "MUST KEEP",
+    "rows": 7,
+    "desc": "Nhiệm vụ vi mô giao cho TNV kiểm chứng"
+  },
+  {
+    "table": "task_submissions",
+    "tier": "MUST KEEP",
+    "rows": 3,
+    "desc": "Bài nộp kết quả thực địa của TNV"
+  },
+  {
+    "table": "communities",
+    "tier": "MUST KEEP",
+    "rows": 4,
+    "desc": "Các CLB, hội đồng đội trường học và khu dân cư"
+  },
+  {
+    "table": "community_members",
+    "tier": "MUST KEEP",
+    "rows": 32,
+    "desc": "Thành viên tham gia CLB môi trường"
+  },
+  {
+    "table": "posts",
+    "tier": "MUST KEEP",
+    "rows": 4,
+    "desc": "Bài viết thảo luận cộng đồng"
+  },
+  {
+    "table": "comments",
+    "tier": "MUST KEEP",
+    "rows": 4,
+    "desc": "Bình luận trao đổi trong cộng đồng"
+  },
+  {
+    "table": "content_reports",
+    "tier": "CAN DELETE",
+    "rows": 0,
+    "desc": "Báo cáo vi phạm nội dung / spam đã giải quyết"
+  },
+  {
+    "table": "notifications",
+    "tier": "CAN DELETE",
+    "rows": 72,
+    "desc": "Thông báo đẩy cho người dùng (> 30 ngày đọc xong có thể xóa)"
+  },
+  {
+    "table": "user_contributions",
+    "tier": "MUST KEEP",
+    "rows": 5,
+    "desc": "Điểm số tín chỉ, huy hiệu tình nguyện"
+  },
+  {
+    "table": "impact_stats",
+    "tier": "CAN ARCHIVE",
+    "rows": 0,
+    "desc": "Thống kê tác động định kỳ"
+  },
+  {
+    "table": "audit_logs (Side A)",
+    "tier": "CAN ARCHIVE",
+    "rows": 153,
+    "desc": "Nhật ký kiểm toán truy cập Side A (> 90 ngày có thể lưu trữ/xóa)"
+  },
+  {
+    "table": "case_feedback",
+    "tier": "CAN ARCHIVE",
+    "rows": 13,
+    "desc": "Đánh giá mức độ hài lòng của người dân sau xử lý"
+  },
+  {
+    "table": "ops_users",
+    "tier": "MUST KEEP",
+    "rows": 17,
+    "desc": "Cán bộ thanh tra, giám sát, pháp chế"
+  },
+  {
+    "table": "ops_sessions",
+    "tier": "CAN DELETE",
+    "rows": 31,
+    "desc": "Phiên đăng nhập cán bộ (hết hạn cần dọn dẹp)"
+  },
+  {
+    "table": "ops_cases",
+    "tier": "MUST KEEP",
+    "rows": 26,
+    "desc": "Hồ sơ sự vụ chuyên trách Side B"
+  },
+  {
+    "table": "ops_case_timeline",
+    "tier": "CAN ARCHIVE",
+    "rows": 50,
+    "desc": "Dòng thời gian xử lý chuyên trách (> 1 năm archive)"
+  },
+  {
+    "table": "ops_staff_assignments",
+    "tier": "MUST KEEP",
+    "rows": 21,
+    "desc": "Phân công cán bộ thụ lý hiện trường"
+  },
+  {
+    "table": "ops_evidence_assets",
+    "tier": "MUST KEEP",
+    "rows": 10,
+    "desc": "Kho lưu trữ bằng chứng pháp lý gốc"
+  },
+  {
+    "table": "legal_documents",
+    "tier": "MUST KEEP",
+    "rows": 4,
+    "desc": "Văn bản pháp luật quy chuẩn (QCVN 05:2023, Nghị định 45)"
+  },
+  {
+    "table": "legal_sections",
+    "tier": "MUST KEEP",
+    "rows": 8,
+    "desc": "Điều khoản pháp lý đã bóc tách phục vụ trích dẫn"
+  },
+  {
+    "table": "legal_sections_fts",
+    "tier": "MUST KEEP",
+    "rows": 8,
+    "desc": "Chỉ mục tìm kiếm toàn văn FTS5 văn bản pháp luật"
+  },
+  {
+    "table": "legal_search_history",
+    "tier": "CAN DELETE",
+    "rows": 0,
+    "desc": "Lịch sử tra cứu pháp lý tạm thời"
+  },
+  {
+    "table": "legal_analyses",
+    "tier": "CAN ARCHIVE",
+    "rows": 0,
+    "desc": "Phân tích khung pháp lý cho từng case"
+  },
+  {
+    "table": "legal_reviews",
+    "tier": "MUST KEEP",
+    "rows": 4,
+    "desc": "Ý kiến thẩm định pháp chế của chuyên viên"
+  },
+  {
+    "table": "inspection_templates",
+    "tier": "MUST KEEP",
+    "rows": 2,
+    "desc": "Biểu mẫu thanh tra thực địa chuẩn QCVN 18"
+  },
+  {
+    "table": "inspection_template_items",
+    "tier": "MUST KEEP",
+    "rows": 9,
+    "desc": "Các tiêu chí đánh giá trong biểu mẫu"
+  },
+  {
+    "table": "inspections",
+    "tier": "MUST KEEP",
+    "rows": 1,
+    "desc": "Biên bản kiểm tra thực địa tại công trình"
+  },
+  {
+    "table": "inspection_items",
+    "tier": "MUST KEEP",
+    "rows": 6,
+    "desc": "Kết quả chấm điểm từng tiêu chí kiểm tra"
+  },
+  {
+    "table": "inspection_findings",
+    "tier": "MUST KEEP",
+    "rows": 3,
+    "desc": "Hành vi vi phạm phát hiện tại hiện trường"
+  },
+  {
+    "table": "corrective_actions",
+    "tier": "MUST KEEP",
+    "rows": 3,
+    "desc": "Yêu cầu khắc phục hậu quả gửi nhà thầu"
+  },
+  {
+    "table": "remediation_submissions",
+    "tier": "MUST KEEP",
+    "rows": 1,
+    "desc": "Báo cáo khắc phục kèm ảnh đối chứng của nhà thầu"
+  },
+  {
+    "table": "case_closures",
+    "tier": "MUST KEEP",
+    "rows": 1,
+    "desc": "Quyết định đóng hồ sơ nghiệm thu khắc phục"
+  },
+  {
+    "table": "signals",
+    "tier": "CAN ARCHIVE",
+    "rows": 4,
+    "desc": "Tín hiệu bất thường từ cảm biến & AI"
+  },
+  {
+    "table": "case_signals",
+    "tier": "CAN ARCHIVE",
+    "rows": 2,
+    "desc": "Tín hiệu gắn với sự vụ"
+  },
+  {
+    "table": "ops_tasks",
+    "tier": "MUST KEEP",
+    "rows": 6,
+    "desc": "Công việc nội bộ của tổ thanh tra"
+  },
+  {
+    "table": "iot_devices",
+    "tier": "MUST KEEP",
+    "rows": 4,
+    "desc": "Danh bạ thiết bị cảm biến bụi IoT"
+  },
+  {
+    "table": "iot_readings",
+    "tier": "CAN DELETE",
+    "rows": 26,
+    "desc": "Dữ liệu đo đạc telemetry thô (cần tổng hợp theo giờ rồi xóa thô > 30 ngày)"
+  },
+  {
+    "table": "iot_events",
+    "tier": "CAN ARCHIVE",
+    "rows": 1,
+    "desc": "Sự kiện cảnh báo vượt ngưỡng PM2.5/PM10"
+  },
+  {
+    "table": "automation_rules",
+    "tier": "MUST KEEP",
+    "rows": 4,
+    "desc": "Quy tắc tự động hóa phát hiện sự vụ"
+  },
+  {
+    "table": "automation_rule_runs",
+    "tier": "CAN DELETE",
+    "rows": 1,
+    "desc": "Nhật ký thực thi cron / rule tự động"
+  },
+  {
+    "table": "human_decisions",
+    "tier": "MUST KEEP",
+    "rows": 3,
+    "desc": "Quyết định phê duyệt của lãnh đạo / cán bộ"
+  },
+  {
+    "table": "evidence_integrity_logs",
+    "tier": "CAN ARCHIVE",
+    "rows": 0,
+    "desc": "Nhật ký xác thực mã băm SHA-256 bằng chứng"
+  },
+  {
+    "table": "audit_logs (Side B)",
+    "tier": "CAN ARCHIVE",
+    "rows": 33,
+    "desc": "Nhật ký tác vụ chuyên trách Side B"
+  },
+  {
+    "table": "integration_logs",
+    "tier": "CAN DELETE",
+    "rows": 0,
+    "desc": "Logs đồng bộ giữa Side A và Side B"
+  },
+  {
+    "table": "cross_side_handoffs",
+    "tier": "MUST KEEP",
+    "rows": 0,
+    "desc": "Hồ sơ bàn giao chính thức giữa cộng đồng và chính quyền"
+  },
+  {
+    "table": "decision_support_runs",
+    "tier": "CAN ARCHIVE",
+    "rows": 27,
+    "desc": "Kết quả gợi ý mức xử phạt và căn cứ pháp lý"
+  }
+]

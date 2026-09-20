@@ -1,0 +1,1091 @@
+{
+  "timestamp": "2026-09-20T02:50:09.391Z",
+  "production_d1_status": {
+    "database_id": "ad40205a-ec4b-40f3-8ab2-c2e7b9e78699",
+    "database_name": "dustguard-production",
+    "size_bytes": 1859584,
+    "size_mb": "1.86 MB",
+    "num_tables": 63,
+    "rows_read_24h": 7167921,
+    "rows_written_24h": 1753,
+    "free_tier_daily_read_limit": 5000000,
+    "remote_access_status": "FREE_TIER_DAILY_ROW_READ_LIMIT_EXCEEDED (Code 7500). Reads blocked until UTC midnight.",
+    "live_worker_url": "https://dustguard.phamphunguyenhung.com"
+  },
+  "audit_results": {
+    "community_side_a": {
+      "database": "data/dustguard-community.db",
+      "tableCount": 24,
+      "tableStats": [
+        {
+          "table": "users",
+          "rows": 35
+        },
+        {
+          "table": "cases",
+          "rows": 28
+        },
+        {
+          "table": "reports",
+          "rows": 64
+        },
+        {
+          "table": "report_media",
+          "rows": 44
+        },
+        {
+          "table": "case_reports",
+          "rows": 49
+        },
+        {
+          "table": "observations",
+          "rows": 54
+        },
+        {
+          "table": "observation_media",
+          "rows": 21
+        },
+        {
+          "table": "confirmations",
+          "rows": 115
+        },
+        {
+          "table": "saved_cases",
+          "rows": 3
+        },
+        {
+          "table": "case_updates",
+          "rows": 29
+        },
+        {
+          "table": "verification_tasks",
+          "rows": 7
+        },
+        {
+          "table": "task_submissions",
+          "rows": 3
+        },
+        {
+          "table": "communities",
+          "rows": 4
+        },
+        {
+          "table": "community_members",
+          "rows": 32
+        },
+        {
+          "table": "posts",
+          "rows": 4
+        },
+        {
+          "table": "comments",
+          "rows": 4
+        },
+        {
+          "table": "content_reports",
+          "rows": 0
+        },
+        {
+          "table": "notifications",
+          "rows": 72
+        },
+        {
+          "table": "user_contributions",
+          "rows": 5
+        },
+        {
+          "table": "impact_stats",
+          "rows": 0
+        },
+        {
+          "table": "audit_logs",
+          "rows": 153
+        },
+        {
+          "table": "case_feedback",
+          "rows": 13
+        },
+        {
+          "table": "iot_devices",
+          "rows": 1
+        },
+        {
+          "table": "iot_readings",
+          "rows": 0
+        }
+      ],
+      "duplicates": [
+        {
+          "check": "reports (reporter_id + title + observed_at)",
+          "query": "SELECT reporter_id, title, observed_at, COUNT(*) as cnt FROM reports GROUP BY reporter_id, title, observed_at HAVING COUNT(*) > 1",
+          "duplicate_groups": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "check": "reports (latitude + longitude + category + minute)",
+          "query": "SELECT latitude, longitude, category, substr(observed_at, 1, 16) as time_min, COUNT(*) as cnt FROM reports GROUP BY latitude, longitude, category, substr(observed_at, 1, 16) HAVING COUNT(*) > 1",
+          "duplicate_groups": 4,
+          "samples": [
+            {
+              "latitude": 10.732,
+              "longitude": 106.709,
+              "category": "dust",
+              "time_min": "2026-09-06T15:30",
+              "cnt": 3
+            },
+            {
+              "latitude": 10.732,
+              "longitude": 106.709,
+              "category": "dust",
+              "time_min": "2026-09-06T15:31",
+              "cnt": 4
+            },
+            {
+              "latitude": 10.732,
+              "longitude": 106.709,
+              "category": "dust",
+              "time_min": "2026-09-06T16:12",
+              "cnt": 9
+            },
+            {
+              "latitude": 10.732,
+              "longitude": 106.709,
+              "category": "dust",
+              "time_min": "2026-09-07T01:01",
+              "cnt": 3
+            }
+          ],
+          "error": null
+        },
+        {
+          "check": "observations (case_id + user_id + observed_at)",
+          "query": "SELECT case_id, user_id, observed_at, COUNT(*) as cnt FROM observations GROUP BY case_id, user_id, observed_at HAVING COUNT(*) > 1",
+          "duplicate_groups": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "check": "confirmations (case_id + user_id)",
+          "query": "SELECT case_id, user_id, COUNT(*) as cnt FROM confirmations GROUP BY case_id, user_id HAVING COUNT(*) > 1",
+          "duplicate_groups": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "check": "saved_cases (case_id + user_id)",
+          "query": "SELECT case_id, user_id, COUNT(*) as cnt FROM saved_cases GROUP BY case_id, user_id HAVING COUNT(*) > 1",
+          "duplicate_groups": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "check": "case_reports (case_id + report_id)",
+          "query": "SELECT case_id, report_id, COUNT(*) as cnt FROM case_reports GROUP BY case_id, report_id HAVING COUNT(*) > 1",
+          "duplicate_groups": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "check": "users (email)",
+          "query": "SELECT email, COUNT(*) as cnt FROM users GROUP BY email HAVING COUNT(*) > 1",
+          "duplicate_groups": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "check": "iot_readings (device_id + recorded_at)",
+          "query": "SELECT device_id, recorded_at, COUNT(*) as cnt FROM iot_readings GROUP BY device_id, recorded_at HAVING COUNT(*) > 1",
+          "duplicate_groups": 0,
+          "samples": [],
+          "error": "no such column: recorded_at"
+        }
+      ],
+      "orphans": [
+        {
+          "child_table": "report_media",
+          "parent_table": "reports",
+          "foreign_key": "report_id",
+          "query": "SELECT rm.id, rm.report_id FROM report_media rm LEFT JOIN reports r ON rm.report_id = r.id WHERE r.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "report_media",
+          "parent_table": "users",
+          "foreign_key": "uploaded_by",
+          "query": "SELECT rm.id, rm.uploaded_by FROM report_media rm LEFT JOIN users u ON rm.uploaded_by = u.id WHERE u.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "reports",
+          "parent_table": "users",
+          "foreign_key": "reporter_id",
+          "query": "SELECT r.id, r.reporter_id FROM reports r LEFT JOIN users u ON r.reporter_id = u.id WHERE u.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "reports",
+          "parent_table": "cases",
+          "foreign_key": "case_id",
+          "query": "SELECT r.id, r.case_id FROM reports r LEFT JOIN cases c ON r.case_id = c.id WHERE r.case_id IS NOT NULL AND c.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "case_reports",
+          "parent_table": "cases",
+          "foreign_key": "case_id",
+          "query": "SELECT cr.id, cr.case_id FROM case_reports cr LEFT JOIN cases c ON cr.case_id = c.id WHERE c.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "case_reports",
+          "parent_table": "reports",
+          "foreign_key": "report_id",
+          "query": "SELECT cr.id, cr.report_id FROM case_reports cr LEFT JOIN reports r ON cr.report_id = r.id WHERE r.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "observations",
+          "parent_table": "cases",
+          "foreign_key": "case_id",
+          "query": "SELECT o.id, o.case_id FROM observations o LEFT JOIN cases c ON o.case_id = c.id WHERE c.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "observations",
+          "parent_table": "users",
+          "foreign_key": "user_id",
+          "query": "SELECT o.id, o.user_id FROM observations o LEFT JOIN users u ON o.user_id = u.id WHERE u.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "observation_media",
+          "parent_table": "observations",
+          "foreign_key": "observation_id",
+          "query": "SELECT om.id, om.observation_id FROM observation_media om LEFT JOIN observations o ON om.observation_id = o.id WHERE o.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "confirmations",
+          "parent_table": "cases",
+          "foreign_key": "case_id",
+          "query": "SELECT c.id, c.case_id FROM confirmations c LEFT JOIN cases cs ON c.case_id = cs.id WHERE cs.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "confirmations",
+          "parent_table": "users",
+          "foreign_key": "user_id",
+          "query": "SELECT c.id, c.user_id FROM confirmations c LEFT JOIN users u ON c.user_id = u.id WHERE u.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "saved_cases",
+          "parent_table": "cases",
+          "foreign_key": "case_id",
+          "query": "SELECT s.id, s.case_id FROM saved_cases s LEFT JOIN cases cs ON s.case_id = cs.id WHERE cs.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "saved_cases",
+          "parent_table": "users",
+          "foreign_key": "user_id",
+          "query": "SELECT s.id, s.user_id FROM saved_cases s LEFT JOIN users u ON s.user_id = u.id WHERE u.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "case_feedback",
+          "parent_table": "cases",
+          "foreign_key": "case_id",
+          "query": "SELECT f.id, f.case_id FROM case_feedback f LEFT JOIN cases c ON f.case_id = c.id WHERE c.id IS NULL",
+          "orphan_count": 11,
+          "samples": [
+            {
+              "id": "fb_1788600973363_8c1z",
+              "case_id": "case-fb-1788600973284"
+            },
+            {
+              "id": "fb_1788601000403_4w0v",
+              "case_id": "case-fb-1788601000320"
+            },
+            {
+              "id": "fb_1788601006249_qcm8",
+              "case_id": "case-fb-1788601006155"
+            },
+            {
+              "id": "fb_1788603375527_4e15b16a",
+              "case_id": "case-fb-1788603375417"
+            },
+            {
+              "id": "fb_1788603399042_7b71f274",
+              "case_id": "case-fb-1788603398810"
+            }
+          ],
+          "error": null
+        },
+        {
+          "child_table": "notifications",
+          "parent_table": "users",
+          "foreign_key": "user_id",
+          "query": "SELECT n.id, n.user_id FROM notifications n LEFT JOIN users u ON n.user_id = u.id WHERE u.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        }
+      ],
+      "expired": [
+        {
+          "category": "notifications (read > 30 days ago)",
+          "query": "SELECT COUNT(*) as cnt FROM notifications WHERE read_at IS NOT NULL AND datetime(created_at) < datetime('now', '-30 days')",
+          "count": 0,
+          "error": null
+        },
+        {
+          "category": "notifications (created > 90 days ago)",
+          "query": "SELECT COUNT(*) as cnt FROM notifications WHERE datetime(created_at) < datetime('now', '-90 days')",
+          "count": 0,
+          "error": null
+        },
+        {
+          "category": "verification_tasks (due_at < now, status != 'COMPLETED')",
+          "query": "SELECT COUNT(*) as cnt FROM verification_tasks WHERE due_at IS NOT NULL AND datetime(due_at) < datetime('now') AND status != 'COMPLETED'",
+          "count": 0,
+          "error": null
+        },
+        {
+          "category": "audit_logs (created > 90 days ago)",
+          "query": "SELECT COUNT(*) as cnt FROM audit_logs WHERE datetime(created_at) < datetime('now', '-90 days')",
+          "count": 0,
+          "error": null
+        }
+      ]
+    },
+    "operations_side_b": {
+      "database": "dustguard-operations/data/dustguard-operations.db",
+      "tableCount": 36,
+      "tableStats": [
+        {
+          "table": "decision_support_runs",
+          "rows": 27
+        },
+        {
+          "table": "users",
+          "rows": 17
+        },
+        {
+          "table": "sessions",
+          "rows": 31
+        },
+        {
+          "table": "contractors",
+          "rows": 5
+        },
+        {
+          "table": "projects",
+          "rows": 6
+        },
+        {
+          "table": "cases",
+          "rows": 26
+        },
+        {
+          "table": "case_timeline",
+          "rows": 50
+        },
+        {
+          "table": "staff_assignments",
+          "rows": 21
+        },
+        {
+          "table": "evidence_assets",
+          "rows": 10
+        },
+        {
+          "table": "legal_documents",
+          "rows": 4
+        },
+        {
+          "table": "legal_sections",
+          "rows": 8
+        },
+        {
+          "table": "legal_search_history",
+          "rows": 0
+        },
+        {
+          "table": "legal_analyses",
+          "rows": 0
+        },
+        {
+          "table": "legal_reviews",
+          "rows": 4
+        },
+        {
+          "table": "inspection_templates",
+          "rows": 2
+        },
+        {
+          "table": "inspection_template_items",
+          "rows": 9
+        },
+        {
+          "table": "inspections",
+          "rows": 1
+        },
+        {
+          "table": "inspection_items",
+          "rows": 6
+        },
+        {
+          "table": "inspection_findings",
+          "rows": 3
+        },
+        {
+          "table": "corrective_actions",
+          "rows": 3
+        },
+        {
+          "table": "remediation_submissions",
+          "rows": 1
+        },
+        {
+          "table": "case_closures",
+          "rows": 1
+        },
+        {
+          "table": "notifications",
+          "rows": 0
+        },
+        {
+          "table": "audit_logs",
+          "rows": 33
+        },
+        {
+          "table": "system_configs",
+          "rows": 3
+        },
+        {
+          "table": "integration_logs",
+          "rows": 0
+        },
+        {
+          "table": "signals",
+          "rows": 4
+        },
+        {
+          "table": "case_signals",
+          "rows": 2
+        },
+        {
+          "table": "tasks",
+          "rows": 6
+        },
+        {
+          "table": "iot_devices",
+          "rows": 4
+        },
+        {
+          "table": "iot_readings",
+          "rows": 26
+        },
+        {
+          "table": "iot_events",
+          "rows": 1
+        },
+        {
+          "table": "automation_rules",
+          "rows": 4
+        },
+        {
+          "table": "automation_runs",
+          "rows": 1
+        },
+        {
+          "table": "analysis_runs",
+          "rows": 0
+        },
+        {
+          "table": "human_decisions",
+          "rows": 3
+        }
+      ],
+      "duplicates": [
+        {
+          "check": "iot_readings (device_id + recorded_at)",
+          "query": "SELECT device_id, recorded_at, COUNT(*) as cnt FROM iot_readings GROUP BY device_id, recorded_at HAVING COUNT(*) > 1",
+          "duplicate_groups": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "check": "users / ops_users (email)",
+          "query": "SELECT email, COUNT(*) as cnt FROM users GROUP BY email HAVING COUNT(*) > 1",
+          "duplicate_groups": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "check": "projects (code)",
+          "query": "SELECT code, COUNT(*) as cnt FROM projects GROUP BY code HAVING COUNT(*) > 1",
+          "duplicate_groups": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "check": "contractors (tax_id)",
+          "query": "SELECT tax_id, COUNT(*) as cnt FROM contractors WHERE tax_id IS NOT NULL AND tax_id != '' GROUP BY tax_id HAVING COUNT(*) > 1",
+          "duplicate_groups": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "check": "case_timeline (case_id + event_type + created_at)",
+          "query": "SELECT case_id, event_type, created_at, COUNT(*) as cnt FROM case_timeline GROUP BY case_id, event_type, created_at HAVING COUNT(*) > 1",
+          "duplicate_groups": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "check": "staff_assignments (case_id + staff_user_id + assignment_type)",
+          "query": "SELECT case_id, staff_user_id, assignment_type, COUNT(*) as cnt FROM staff_assignments GROUP BY case_id, staff_user_id, assignment_type HAVING COUNT(*) > 1",
+          "duplicate_groups": 0,
+          "samples": [],
+          "error": null
+        }
+      ],
+      "orphans": [
+        {
+          "child_table": "sessions",
+          "parent_table": "users",
+          "foreign_key": "user_id",
+          "query": "SELECT s.id, s.user_id FROM sessions s LEFT JOIN users u ON s.user_id = u.id WHERE u.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "staff_assignments",
+          "parent_table": "cases",
+          "foreign_key": "case_id",
+          "query": "SELECT a.id, a.case_id FROM staff_assignments a LEFT JOIN cases c ON a.case_id = c.id WHERE c.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "staff_assignments",
+          "parent_table": "users",
+          "foreign_key": "staff_user_id",
+          "query": "SELECT a.id, a.staff_user_id FROM staff_assignments a LEFT JOIN users u ON a.staff_user_id = u.id WHERE u.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "case_timeline",
+          "parent_table": "cases",
+          "foreign_key": "case_id",
+          "query": "SELECT ct.id, ct.case_id FROM case_timeline ct LEFT JOIN cases c ON ct.case_id = c.id WHERE c.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "evidence_assets",
+          "parent_table": "cases",
+          "foreign_key": "case_id",
+          "query": "SELECT e.id, e.case_id FROM evidence_assets e LEFT JOIN cases c ON e.case_id = c.id WHERE e.case_id IS NOT NULL AND c.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "inspection_items",
+          "parent_table": "inspections",
+          "foreign_key": "inspection_id",
+          "query": "SELECT ii.id, ii.inspection_id FROM inspection_items ii LEFT JOIN inspections i ON ii.inspection_id = i.id WHERE i.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "inspection_findings",
+          "parent_table": "inspections",
+          "foreign_key": "inspection_id",
+          "query": "SELECT ifind.id, ifind.inspection_id FROM inspection_findings ifind LEFT JOIN inspections i ON ifind.inspection_id = i.id WHERE i.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "corrective_actions",
+          "parent_table": "cases",
+          "foreign_key": "case_id",
+          "query": "SELECT ca.id, ca.case_id FROM corrective_actions ca LEFT JOIN cases c ON ca.case_id = c.id WHERE c.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "legal_sections",
+          "parent_table": "legal_documents",
+          "foreign_key": "document_id",
+          "query": "SELECT ls.id, ls.document_id FROM legal_sections ls LEFT JOIN legal_documents ld ON ls.document_id = ld.id WHERE ld.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "projects",
+          "parent_table": "contractors",
+          "foreign_key": "contractor_id",
+          "query": "SELECT p.id, p.contractor_id FROM projects p LEFT JOIN contractors c ON p.contractor_id = c.id WHERE p.contractor_id IS NOT NULL AND c.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        }
+      ],
+      "expired": [
+        {
+          "category": "sessions (expires_at < now)",
+          "query": "SELECT COUNT(*) as cnt FROM sessions WHERE expires_at IS NOT NULL AND datetime(expires_at) < datetime('now')",
+          "count": 31,
+          "error": null
+        },
+        {
+          "category": "sessions (created > 30 days ago)",
+          "query": "SELECT COUNT(*) as cnt FROM sessions WHERE datetime(created_at) < datetime('now', '-30 days')",
+          "count": 0,
+          "error": null
+        },
+        {
+          "category": "audit_logs (created > 90 days ago)",
+          "query": "SELECT COUNT(*) as cnt FROM audit_logs WHERE datetime(created_at) < datetime('now', '-90 days')",
+          "count": 0,
+          "error": null
+        }
+      ]
+    },
+    "prisma_dev": {
+      "database": "app/prisma/dev.db",
+      "tableCount": 62,
+      "tableStats": [
+        {
+          "table": "session",
+          "rows": 512
+        },
+        {
+          "table": "account",
+          "rows": 55
+        },
+        {
+          "table": "verification",
+          "rows": 0
+        },
+        {
+          "table": "audit_logs",
+          "rows": 27237
+        },
+        {
+          "table": "legal_segments",
+          "rows": 10
+        },
+        {
+          "table": "legal_documents",
+          "rows": 6
+        },
+        {
+          "table": "legal_obligations",
+          "rows": 12
+        },
+        {
+          "table": "alert_notifications",
+          "rows": 0
+        },
+        {
+          "table": "sensor_readings",
+          "rows": 6
+        },
+        {
+          "table": "obligation_checklist_mappings",
+          "rows": 0
+        },
+        {
+          "table": "case_timelines",
+          "rows": 6
+        },
+        {
+          "table": "contractor_explanations",
+          "rows": 0
+        },
+        {
+          "table": "sanction_decisions",
+          "rows": 0
+        },
+        {
+          "table": "profiles",
+          "rows": 73
+        },
+        {
+          "table": "sites",
+          "rows": 4
+        },
+        {
+          "table": "complaints",
+          "rows": 5
+        },
+        {
+          "table": "inspections",
+          "rows": 1
+        },
+        {
+          "table": "evidences",
+          "rows": 4
+        },
+        {
+          "table": "actions",
+          "rows": 2
+        },
+        {
+          "table": "draft_documents",
+          "rows": 0
+        },
+        {
+          "table": "administrative_regions",
+          "rows": 0
+        },
+        {
+          "table": "administrative_units",
+          "rows": 0
+        },
+        {
+          "table": "provinces",
+          "rows": 0
+        },
+        {
+          "table": "wards",
+          "rows": 0
+        },
+        {
+          "table": "alerts",
+          "rows": 1
+        },
+        {
+          "table": "cases",
+          "rows": 6
+        },
+        {
+          "table": "document_revisions",
+          "rows": 0
+        },
+        {
+          "table": "sensors",
+          "rows": 4
+        },
+        {
+          "table": "users",
+          "rows": 88
+        },
+        {
+          "table": "case_status_history",
+          "rows": 23
+        },
+        {
+          "table": "priority_score_history",
+          "rows": 1
+        },
+        {
+          "table": "communities",
+          "rows": 0
+        },
+        {
+          "table": "community_members",
+          "rows": 0
+        },
+        {
+          "table": "campaigns",
+          "rows": 3
+        },
+        {
+          "table": "campaign_members",
+          "rows": 1
+        },
+        {
+          "table": "observations",
+          "rows": 98
+        },
+        {
+          "table": "observation_evidence",
+          "rows": 56
+        },
+        {
+          "table": "follow_ups",
+          "rows": 56
+        },
+        {
+          "table": "handoffs",
+          "rows": 28
+        },
+        {
+          "table": "impact_events",
+          "rows": 12016
+        },
+        {
+          "table": "idempotency_keys",
+          "rows": 475
+        },
+        {
+          "table": "audit_events",
+          "rows": 0
+        },
+        {
+          "table": "environmental_categories",
+          "rows": 0
+        },
+        {
+          "table": "youth_activities",
+          "rows": 12
+        },
+        {
+          "table": "youth_certificates",
+          "rows": 987
+        },
+        {
+          "table": "automation_runs",
+          "rows": 13
+        },
+        {
+          "table": "system_metadata",
+          "rows": 2
+        },
+        {
+          "table": "legal_rules",
+          "rows": 0
+        },
+        {
+          "table": "system_audit_logs",
+          "rows": 42
+        },
+        {
+          "table": "community_memberships",
+          "rows": 0
+        },
+        {
+          "table": "campaign_participants",
+          "rows": 1049
+        },
+        {
+          "table": "campaign_clubs",
+          "rows": 0
+        },
+        {
+          "table": "tasks",
+          "rows": 29
+        },
+        {
+          "table": "task_participants",
+          "rows": 0
+        },
+        {
+          "table": "task_submissions",
+          "rows": 0
+        },
+        {
+          "table": "task_timelines",
+          "rows": 0
+        },
+        {
+          "table": "notifications",
+          "rows": 7
+        },
+        {
+          "table": "reports",
+          "rows": 4
+        },
+        {
+          "table": "report_schedules",
+          "rows": 0
+        },
+        {
+          "table": "system_settings",
+          "rows": 0
+        },
+        {
+          "table": "iot_devices",
+          "rows": 1
+        },
+        {
+          "table": "iot_readings",
+          "rows": 1
+        }
+      ],
+      "duplicates": [
+        {
+          "check": "sensor_readings (sensorId + timestamp)",
+          "query": "SELECT sensorId, timestamp, COUNT(*) as cnt FROM sensor_readings GROUP BY sensorId, timestamp HAVING COUNT(*) > 1",
+          "duplicate_groups": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "check": "observations (category + latitude + longitude + substr(observed_at,1,16))",
+          "query": "SELECT category, latitude, longitude, substr(observed_at,1,16) as time_min, COUNT(*) as cnt FROM observations GROUP BY category, latitude, longitude, substr(observed_at,1,16) HAVING COUNT(*) > 1",
+          "duplicate_groups": 0,
+          "samples": [],
+          "error": "no such column: observed_at"
+        },
+        {
+          "check": "users (email)",
+          "query": "SELECT email, COUNT(*) as cnt FROM users GROUP BY email HAVING COUNT(*) > 1",
+          "duplicate_groups": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "check": "youth_certificates (certificate_code)",
+          "query": "SELECT certificate_code, COUNT(*) as cnt FROM youth_certificates GROUP BY certificate_code HAVING COUNT(*) > 1",
+          "duplicate_groups": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "check": "youth_certificates (user_id + policy_version)",
+          "query": "SELECT user_id, policy_version, COUNT(*) as cnt FROM youth_certificates GROUP BY user_id, policy_version HAVING COUNT(*) > 1",
+          "duplicate_groups": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "check": "idempotency_keys (key)",
+          "query": "SELECT key, COUNT(*) as cnt FROM idempotency_keys GROUP BY key HAVING COUNT(*) > 1",
+          "duplicate_groups": 0,
+          "samples": [],
+          "error": null
+        }
+      ],
+      "orphans": [
+        {
+          "child_table": "session",
+          "parent_table": "users",
+          "foreign_key": "userId",
+          "query": "SELECT s.id, s.userId FROM session s LEFT JOIN users u ON s.userId = u.id WHERE u.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "account",
+          "parent_table": "users",
+          "foreign_key": "userId",
+          "query": "SELECT a.id, a.userId FROM account a LEFT JOIN users u ON a.userId = u.id WHERE u.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "observation_evidence",
+          "parent_table": "observations",
+          "foreign_key": "observation_id",
+          "query": "SELECT oe.id, oe.observation_id FROM observation_evidence oe LEFT JOIN observations o ON oe.observation_id = o.id WHERE o.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "follow_ups",
+          "parent_table": "observations",
+          "foreign_key": "observation_id",
+          "query": "SELECT f.id, f.observation_id FROM follow_ups f LEFT JOIN observations o ON f.observation_id = o.id WHERE o.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "handoffs",
+          "parent_table": "cases",
+          "foreign_key": "case_id",
+          "query": "SELECT h.id, h.case_id FROM handoffs h LEFT JOIN cases c ON h.case_id = c.id WHERE h.case_id IS NOT NULL AND c.id IS NULL",
+          "orphan_count": 0,
+          "samples": [],
+          "error": null
+        },
+        {
+          "child_table": "youth_certificates",
+          "parent_table": "users",
+          "foreign_key": "user_id",
+          "query": "SELECT yc.id, yc.user_id FROM youth_certificates yc LEFT JOIN users u ON yc.user_id = u.id WHERE u.id IS NULL",
+          "orphan_count": 987,
+          "samples": [
+            {
+              "id": "cert_1787324961257_pdxll",
+              "user_id": "usr_test_student_01"
+            },
+            {
+              "id": "cert_1787325000670_k9546",
+              "user_id": "usr_proof_student_88"
+            },
+            {
+              "id": "cert_1787325344212_zdfcj",
+              "user_id": "usr_test_mt33d1eg"
+            },
+            {
+              "id": "cert_1787325382978_y2xtg",
+              "user_id": "usr_test_mt33dvlb"
+            },
+            {
+              "id": "cert_1787325384751_28bdb",
+              "user_id": "usr_test_mt33dx03"
+            }
+          ],
+          "error": null
+        }
+      ],
+      "expired": [
+        {
+          "category": "session (expiresAt < now)",
+          "query": "SELECT COUNT(*) as cnt FROM session WHERE expiresAt IS NOT NULL AND datetime(expiresAt) < datetime('now')",
+          "count": 24,
+          "error": null
+        },
+        {
+          "category": "idempotency_keys (expires_at < now OR created_at < datetime('now', '-24 hours'))",
+          "query": "SELECT COUNT(*) as cnt FROM idempotency_keys WHERE (expires_at IS NOT NULL AND datetime(expires_at) < datetime('now')) OR datetime(created_at) < datetime('now', '-24 hours')",
+          "count": 474,
+          "error": null
+        },
+        {
+          "category": "audit_logs (created_at < datetime('now', '-90 days'))",
+          "query": "SELECT COUNT(*) as cnt FROM audit_logs WHERE created_at IS NOT NULL AND datetime(created_at) < datetime('now', '-90 days')",
+          "count": 0,
+          "error": "no such column: created_at"
+        }
+      ]
+    }
+  }
+}

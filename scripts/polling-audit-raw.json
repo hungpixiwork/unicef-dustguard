@@ -1,0 +1,903 @@
+{
+  "setInterval": [
+    {
+      "file": "app/src/components/map/MapTimePlayback.jsx",
+      "line": 14,
+      "code": "interval = setInterval(() => {"
+    },
+    {
+      "file": "app/src/modules/citizen/CitizenPortal.jsx",
+      "line": 232,
+      "code": "const interval = setInterval(fetchIoT, 3000);"
+    },
+    {
+      "file": "app/src/modules/iot/IoTDashboard.jsx",
+      "line": 61,
+      "code": "const timer = setInterval(fetchIoTData, 5000);"
+    },
+    {
+      "file": "app/src/modules/staff/components/IoTSetupModal.jsx",
+      "line": 172,
+      "code": "pollingTimerRef.current = setInterval(checkStatus, 2000);"
+    },
+    {
+      "file": "app/src/modules/staff/StaffAlerts.jsx",
+      "line": 140,
+      "code": "const interval = setInterval(() => {"
+    },
+    {
+      "file": "app/src/modules/staff/StaffCaseDetail.jsx",
+      "line": 334,
+      "code": "const interval = setInterval(updateCountdown, 1000);"
+    },
+    {
+      "file": "apps/web/src/pages/DashboardPage.tsx",
+      "line": 176,
+      "code": "const iotInterval = setInterval(fetchIoT, 3000);"
+    },
+    {
+      "file": "apps/web/src/pages/IoTDevicePage.tsx",
+      "line": 57,
+      "code": "const interval = setInterval(fetchDetail, 3000);"
+    },
+    {
+      "file": "apps/web/src/pages/IoTSettingsPage.tsx",
+      "line": 90,
+      "code": "const interval = setInterval(fetchDeviceData, 3000);"
+    }
+  ],
+  "setTimeout": [
+    {
+      "file": "app/src/apps/admin/pages/settings/SettingsPage.jsx",
+      "line": 108,
+      "code": "setTimeout(() => setSuccessToast(''), 4000);"
+    },
+    {
+      "file": "app/src/apps/admin/pages/settings/SettingsPage.jsx",
+      "line": 143,
+      "code": "setTimeout(() => setSuccessToast(''), 4000);"
+    },
+    {
+      "file": "app/src/apps/admin/pages/settings/SettingsPage.jsx",
+      "line": 156,
+      "code": "setTimeout(() => setSuccessToast(''), 4000);"
+    },
+    {
+      "file": "app/src/apps/admin/pages/settings/SettingsPage.jsx",
+      "line": 170,
+      "code": "setTimeout(() => setSuccessToast(''), 4000);"
+    },
+    {
+      "file": "app/src/apps/admin/pages/settings/SettingsPage.jsx",
+      "line": 210,
+      "code": "setTimeout(() => setSuccessToast(''), 4000);"
+    },
+    {
+      "file": "app/src/apps/admin/pages/settings/SettingsPage.jsx",
+      "line": 225,
+      "code": "setTimeout(() => setSuccessToast(''), 4000);"
+    },
+    {
+      "file": "app/src/apps/admin/pages/users/UsersPage.jsx",
+      "line": 70,
+      "code": "setTimeout(() => setSuccessToast(''), 4000);"
+    },
+    {
+      "file": "app/src/apps/admin/pages/users/UsersPage.jsx",
+      "line": 101,
+      "code": "setTimeout(() => setSuccessToast(''), 4000);"
+    },
+    {
+      "file": "app/src/apps/admin/pages/users/UsersPage.jsx",
+      "line": 132,
+      "code": "setTimeout(() => setSuccessToast(''), 4000);"
+    },
+    {
+      "file": "app/src/apps/staff/pages/cases/CaseDetailPage.jsx",
+      "line": 83,
+      "code": "setTimeout(() => setSuccessToast(null), 3500);"
+    },
+    {
+      "file": "app/src/apps/staff/pages/reports/StaffReportsPage.jsx",
+      "line": 57,
+      "code": "setTimeout(() => setToastMsg(''), 3000);"
+    },
+    {
+      "file": "app/src/apps/staff/pages/settings/StaffSettingsPage.jsx",
+      "line": 44,
+      "code": "setTimeout(() => setSaved(false), 2500);"
+    },
+    {
+      "file": "app/src/apps/staff/pages/settings/StaffSettingsPage.jsx",
+      "line": 63,
+      "code": "setTimeout(() => setSaved(false), 2500);"
+    },
+    {
+      "file": "app/src/apps/staff/pages/tasks/TaskDetailPage.jsx",
+      "line": 93,
+      "code": "setTimeout(() => setSuccessToast(null), 3500);"
+    },
+    {
+      "file": "app/src/components/common/CaseLocationSection.jsx",
+      "line": 35,
+      "code": "setTimeout(() => setCopied(false), 2000);"
+    },
+    {
+      "file": "app/src/components/common/GlobalCommandPalette.tsx",
+      "line": 40,
+      "code": "setTimeout(() => inputRef.current?.focus(), 50);"
+    },
+    {
+      "file": "app/src/components/common/GlobalCommandPalette.tsx",
+      "line": 73,
+      "code": "const timer = setTimeout(async () => {"
+    },
+    {
+      "file": "app/src/components/DocumentEditor/DataBindingsPanel.jsx",
+      "line": 75,
+      "code": "setTimeout(() => setCopiedKey(''), 1500);"
+    },
+    {
+      "file": "app/src/components/DocumentEditor/GoogleDocsEditor.jsx",
+      "line": 160,
+      "code": "saveTimeoutRef.current = setTimeout(() => {"
+    },
+    {
+      "file": "app/src/components/executive/ProofApprovalModal.jsx",
+      "line": 78,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/components/executive/ProofApprovalModal.jsx",
+      "line": 113,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/components/map/GeoLocationPicker.jsx",
+      "line": 96,
+      "code": "searchTimeoutRef.current = setTimeout(async () => {"
+    },
+    {
+      "file": "app/src/components/map/SpatialMapCanvas.jsx",
+      "line": 69,
+      "code": "const t0 = setTimeout(run, 50);"
+    },
+    {
+      "file": "app/src/components/map/SpatialMapCanvas.jsx",
+      "line": 70,
+      "code": "const t1 = setTimeout(run, 150);"
+    },
+    {
+      "file": "app/src/components/map/SpatialMapCanvas.jsx",
+      "line": 71,
+      "code": "const t2 = setTimeout(run, 350);"
+    },
+    {
+      "file": "app/src/components/map/SpatialMapCanvas.jsx",
+      "line": 72,
+      "code": "const t3 = setTimeout(run, 800);"
+    },
+    {
+      "file": "app/src/components/site-detail/SiteChecklistTab.jsx",
+      "line": 103,
+      "code": "setTimeout(() => setSaveSuccess(null), 3000);"
+    },
+    {
+      "file": "app/src/components/site-detail/SiteComplaintsTab.jsx",
+      "line": 40,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/components/site-detail/SiteLegalDocumentsTab.jsx",
+      "line": 77,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/components/site-detail/SiteLegalDocumentsTab.jsx",
+      "line": 81,
+      "code": "setTimeout(async () => {"
+    },
+    {
+      "file": "app/src/components/StaffAI/AutoReport.jsx",
+      "line": 110,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/components/StaffAI/AutoReport.jsx",
+      "line": 114,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/components/ui/Toast.jsx",
+      "line": 43,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/legal-document-engine/A4InteractiveEditor.jsx",
+      "line": 121,
+      "code": "autoSaveTimerRef.current = setTimeout(() => {"
+    },
+    {
+      "file": "app/src/legal-document-engine/A4InteractiveEditor.jsx",
+      "line": 181,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/legal-document-engine/A4InteractiveEditor.jsx",
+      "line": 212,
+      "code": "setTimeout(() => URL.revokeObjectURL(url), 1000);"
+    },
+    {
+      "file": "app/src/lib/spatial/geocoding.service.js",
+      "line": 35,
+      "code": "await new Promise(r => setTimeout(r, waitTime));"
+    },
+    {
+      "file": "app/src/modules/auth/Login.jsx",
+      "line": 100,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/modules/cases/components/SharedCaseDrawer.jsx",
+      "line": 61,
+      "code": "setTimeout(() => setFeedbackMsg(null), 4000);"
+    },
+    {
+      "file": "app/src/modules/cases/components/SharedCaseDrawer.jsx",
+      "line": 70,
+      "code": "setTimeout(onClose, 800);"
+    },
+    {
+      "file": "app/src/modules/cases/components/SharedCaseDrawer.jsx",
+      "line": 84,
+      "code": "setTimeout(onClose, 800);"
+    },
+    {
+      "file": "app/src/modules/cases/components/SharedCaseDrawer.jsx",
+      "line": 98,
+      "code": "setTimeout(onClose, 800);"
+    },
+    {
+      "file": "app/src/modules/citizen/CitizenPortal.jsx",
+      "line": 126,
+      "code": "const timer = setTimeout(async () => {"
+    },
+    {
+      "file": "app/src/modules/citizen/CitizenProfile.jsx",
+      "line": 224,
+      "code": "setTimeout(() => setSavedSuccess(false), 4000);"
+    },
+    {
+      "file": "app/src/modules/citizen/CitizenReport.jsx",
+      "line": 392,
+      "code": "setTimeout(() => setLocationNotice(''), 10000);"
+    },
+    {
+      "file": "app/src/modules/citizen/CitizenReport.jsx",
+      "line": 714,
+      "code": "setTimeout(() => setCopied(false), 2000);"
+    },
+    {
+      "file": "app/src/modules/citizen/CitizenTrack.jsx",
+      "line": 266,
+      "code": "setTimeout(() => setFeedbackSuccess(null), 6000);"
+    },
+    {
+      "file": "app/src/modules/citizen/CitizenTrack.jsx",
+      "line": 339,
+      "code": "setTimeout(() => setEvidenceAddedSuccess(false), 5000);"
+    },
+    {
+      "file": "app/src/modules/community/CommunityCaseWorkspace.jsx",
+      "line": 257,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/modules/community/CommunityCaseWorkspace.jsx",
+      "line": 595,
+      "code": "setTimeout(() => setCopied1022(false), 3000);"
+    },
+    {
+      "file": "app/src/modules/community/CommunityCaseWorkspace.jsx",
+      "line": 652,
+      "code": "setTimeout(() => setCopiedDossierUrl(false), 2500);"
+    },
+    {
+      "file": "app/src/modules/community/CommunityDiscover.jsx",
+      "line": 48,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/modules/community/CommunityToastContext.jsx",
+      "line": 41,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/modules/community/CreateObservation.jsx",
+      "line": 636,
+      "code": "setTimeout(() => setCopiedCode(false), 2500);"
+    },
+    {
+      "file": "app/src/modules/contractor/ContractorActionDetail.jsx",
+      "line": 163,
+      "code": "setTimeout(() => setSuccessMessage(null), 4000);"
+    },
+    {
+      "file": "app/src/modules/contractor/ContractorEvidence.jsx",
+      "line": 79,
+      "code": "setTimeout(() => setCopiedHash(null), 2000);"
+    },
+    {
+      "file": "app/src/modules/documents/DocumentEditorPage.jsx",
+      "line": 167,
+      "code": "setTimeout(() => window.URL.revokeObjectURL(url), 1000);"
+    },
+    {
+      "file": "app/src/modules/documents/DocumentPreviewPage.jsx",
+      "line": 97,
+      "code": "setTimeout(() => URL.revokeObjectURL(url), 1000);"
+    },
+    {
+      "file": "app/src/modules/executive/components/PriorityCommandCenter.jsx",
+      "line": 64,
+      "code": "setTimeout(() => setToastMsg(null), 4000);"
+    },
+    {
+      "file": "app/src/modules/executive/ExecutiveApprovals.jsx",
+      "line": 53,
+      "code": "setTimeout(() => setToastMsg(null), 4000);"
+    },
+    {
+      "file": "app/src/modules/executive/ExecutiveCases.jsx",
+      "line": 52,
+      "code": "setTimeout(() => setToastMsg(null), 4000);"
+    },
+    {
+      "file": "app/src/modules/executive/ExecutiveDashboard.jsx",
+      "line": 76,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/modules/executive/ExecutiveHeatmap.jsx",
+      "line": 21,
+      "code": "const timer1 = setTimeout(run, 80);"
+    },
+    {
+      "file": "app/src/modules/executive/ExecutiveHeatmap.jsx",
+      "line": 22,
+      "code": "const timer2 = setTimeout(run, 250);"
+    },
+    {
+      "file": "app/src/modules/executive/ExecutiveHeatmap.jsx",
+      "line": 23,
+      "code": "const timer3 = setTimeout(run, 600);"
+    },
+    {
+      "file": "app/src/modules/executive/ExecutiveRiskMatrix.jsx",
+      "line": 151,
+      "code": "setTimeout(() => setActionSuccess(''), 4000);"
+    },
+    {
+      "file": "app/src/modules/executive/ExecutiveSlaCompliance.jsx",
+      "line": 123,
+      "code": "setTimeout(() => setActionSuccess(''), 4000);"
+    },
+    {
+      "file": "app/src/modules/public/SensorGuide.jsx",
+      "line": 34,
+      "code": "setTimeout(() => setCopied(false), 2000);"
+    },
+    {
+      "file": "app/src/modules/staff/CaseDossierPackageModal.jsx",
+      "line": 73,
+      "code": "setTimeout(() => setCopiedLink(false), 2000);"
+    },
+    {
+      "file": "app/src/modules/staff/components/RegulationAssistantModal.jsx",
+      "line": 35,
+      "code": "setTimeout(() => setCopiedKey(null), 2000);"
+    },
+    {
+      "file": "app/src/modules/staff/RemediationWorkspace.jsx",
+      "line": 241,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/modules/staff/StaffAlerts.jsx",
+      "line": 746,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/modules/staff/StaffCaseDetail.jsx",
+      "line": 110,
+      "code": "setTimeout(() => setToastMessage(null), 3000);"
+    },
+    {
+      "file": "app/src/modules/staff/StaffCaseDetail.jsx",
+      "line": 300,
+      "code": "const timer = setTimeout(() => {"
+    },
+    {
+      "file": "app/src/modules/staff/StaffCaseDetail.jsx",
+      "line": 434,
+      "code": "setTimeout(() => navigate('/staff/cases'), 500);"
+    },
+    {
+      "file": "app/src/modules/staff/StaffComplaints.jsx",
+      "line": 114,
+      "code": "setTimeout(() => setActionFeedback(null), 3000);"
+    },
+    {
+      "file": "app/src/modules/staff/StaffInspections.jsx",
+      "line": 223,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/modules/staff/StaffSettings.jsx",
+      "line": 69,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/modules/staff/StaffSettings.jsx",
+      "line": 80,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/modules/staff/StaffSettings.jsx",
+      "line": 91,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/modules/staff/StaffSettings.jsx",
+      "line": 102,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "app/src/modules/youth/YouthCertificate.jsx",
+      "line": 101,
+      "code": "setTimeout(() => setCopyNotice(false), 2500);"
+    },
+    {
+      "file": "app/src/modules/youth/YouthCredits.jsx",
+      "line": 221,
+      "code": "setTimeout(() => setIsSavedNotice(false), 2000);"
+    },
+    {
+      "file": "app/src/modules/youth/YouthCredits.jsx",
+      "line": 231,
+      "code": "setTimeout(() => setAddReportMessage(null), 3000);"
+    },
+    {
+      "file": "app/src/modules/youth/YouthCredits.jsx",
+      "line": 251,
+      "code": "setTimeout(() => setAddReportMessage(null), 3500);"
+    },
+    {
+      "file": "app/src/shared/components/LogoutConfirmModal.jsx",
+      "line": 34,
+      "code": "const timer = setTimeout(() => {"
+    },
+    {
+      "file": "apps/web/src/components/modals/ContributionSummaryModal.tsx",
+      "line": 78,
+      "code": "setTimeout(() => setCopied(false), 2500);"
+    },
+    {
+      "file": "apps/web/src/components/modals/ContributionSummaryModal.tsx",
+      "line": 82,
+      "code": "setTimeout(() => setCopied(false), 2500);"
+    },
+    {
+      "file": "apps/web/src/context/ToastContext.tsx",
+      "line": 34,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "apps/web/src/pages/contractor/ContractorRemediationPage.tsx",
+      "line": 82,
+      "code": "const timer = setTimeout(() => {"
+    },
+    {
+      "file": "apps/web/src/pages/CreateReportPage.tsx",
+      "line": 116,
+      "code": "const timer = setTimeout(() => {"
+    },
+    {
+      "file": "apps/web/src/pages/DashboardPage.tsx",
+      "line": 79,
+      "code": "const timer = setTimeout(async () => {"
+    },
+    {
+      "file": "apps/web/src/pages/IoTSettingsPage.tsx",
+      "line": 127,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "apps/web/src/pages/IoTSettingsPage.tsx",
+      "line": 151,
+      "code": "setTimeout(() => setToastMsg(''), 4000);"
+    },
+    {
+      "file": "apps/web/src/pages/ProfilePage.tsx",
+      "line": 40,
+      "code": "setTimeout(() => setSavedSuccess(false), 3000);"
+    },
+    {
+      "file": "apps/web/src/pages/VerificationDetailPage.tsx",
+      "line": 78,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "apps/web/src/pages/VerificationDetailPage.tsx",
+      "line": 162,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "apps/web/src/pages/VerificationDetailPage.tsx",
+      "line": 183,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "apps/web/src/pages/VerificationDetailPage.tsx",
+      "line": 205,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "apps/web/src/services/geocoding.ts",
+      "line": 105,
+      "code": "const timeoutId = setTimeout(() => controller.abort(), 6000);"
+    },
+    {
+      "file": "dustguard-operations/apps/web/src/components/common/CommandPalette.tsx",
+      "line": 42,
+      "code": "setTimeout(() => inputRef.current?.focus(), 50);"
+    },
+    {
+      "file": "dustguard-operations/apps/web/src/components/common/CommandPalette.tsx",
+      "line": 54,
+      "code": "const timer = setTimeout(async () => {"
+    },
+    {
+      "file": "dustguard-operations/apps/web/src/components/workspace/EvidenceDetailDrawer.tsx",
+      "line": 60,
+      "code": "setTimeout(() => setCopiedSha(false), 2000);"
+    },
+    {
+      "file": "dustguard-operations/apps/web/src/context/ToastContext.tsx",
+      "line": 34,
+      "code": "setTimeout(() => {"
+    },
+    {
+      "file": "dustguard-operations/apps/web/src/pages/EvidencePage.tsx",
+      "line": 43,
+      "code": "setTimeout(() => setCopiedId(null), 2000);"
+    }
+  ],
+  "poll": [
+    {
+      "file": "app/src/modules/citizen/CitizenPortal.jsx",
+      "line": 209,
+      "code": "// Polling dữ liệu cảm biến thật từ trạm quan trắc DG-IOT-001 (ASAIR APM2000)"
+    },
+    {
+      "file": "app/src/modules/staff/components/IoTSetupModal.jsx",
+      "line": 22,
+      "code": "* Step 3: Realtime Polling & Live Data Confirmation from backend DB"
+    },
+    {
+      "file": "app/src/modules/staff/components/IoTSetupModal.jsx",
+      "line": 62,
+      "code": "// Clean polling on unmount or close"
+    },
+    {
+      "file": "app/src/modules/staff/components/IoTSetupModal.jsx",
+      "line": 107,
+      "code": "// Step 2 -> Step 3: Start polling backend for first reading"
+    },
+    {
+      "file": "app/src/modules/staff/components/IoTSetupModal.jsx",
+      "line": 130,
+      "code": "// Auto move to Step 3 and trigger polling"
+    },
+    {
+      "file": "app/src/modules/staff/components/IoTSetupModal.jsx",
+      "line": 141,
+      "code": "// Polling backend D1 for real telemetry arrival"
+    },
+    {
+      "file": "app/src/modules/staff/components/IoTSetupModal.jsx",
+      "line": 166,
+      "code": "// Continue polling"
+    },
+    {
+      "file": "app/src/modules/staff/StaffAlerts.jsx",
+      "line": 139,
+      "code": "// Cost Guardrail: De-amplify traffic; poll at 60s and pause when tab is backgrounded"
+    },
+    {
+      "file": "apps/web/src/pages/DashboardPage.tsx",
+      "line": 155,
+      "code": "// Polling số liệu cảm biến thật mỗi 3 giây (Zero Reload)"
+    }
+  ],
+  "refetchInterval": [],
+  "invalidateQueries": [],
+  "heartbeat": [
+    {
+      "file": "app/src/modules/staff/components/IoTSetupModal.jsx",
+      "line": 365,
+      "code": "Hệ thống đang quét tín hiệu heartbeat và dữ liệu đo đạc đầu tiên từ <strong>{nodeCode}</strong>."
+    }
+  ],
+  "refresh": [
+    {
+      "file": "app/src/apps/staff/pages/settings/StaffSettingsPage.jsx",
+      "line": 9,
+      "code": "autoRefresh: true,"
+    },
+    {
+      "file": "app/src/apps/staff/pages/settings/StaffSettingsPage.jsx",
+      "line": 134,
+      "code": "onClick={() => handleToggle('autoRefresh')}"
+    },
+    {
+      "file": "app/src/apps/staff/pages/settings/StaffSettingsPage.jsx",
+      "line": 136,
+      "code": "settings.autoRefresh ? 'bg-[#B91C1C]' : 'bg-[#E7E5E4]'"
+    },
+    {
+      "file": "app/src/apps/staff/pages/settings/StaffSettingsPage.jsx",
+      "line": 140,
+      "code": "settings.autoRefresh ? 'translate-x-5' : ''"
+    }
+  ],
+  "useQuery": [],
+  "fetch": [
+    {
+      "file": "app/src/components/DocumentEditor/RevisionHistoryModal.jsx",
+      "line": 21,
+      "code": "fetch(`/api/documents/drafts/${documentId}/revisions`, {"
+    },
+    {
+      "file": "app/src/components/site-detail/SiteLegalDocumentsTab.jsx",
+      "line": 51,
+      "code": "const res = await fetch(`/api/documents/drafts?siteId=${site.id}`, { credentials: 'include' });"
+    },
+    {
+      "file": "app/src/legal-document-engine/A4InteractiveEditor.jsx",
+      "line": 266,
+      "code": "const res = await fetch(`/api/documents/${currentDraftId}/upload-signed`, {"
+    },
+    {
+      "file": "app/src/lib/api/policyIntelligenceApi.js",
+      "line": 108,
+      "code": "const res = await fetch(fileUrl, {"
+    },
+    {
+      "file": "app/src/lib/api/request.js",
+      "line": 288,
+      "code": "response = await fetch(url, fetchOptions);"
+    },
+    {
+      "file": "app/src/lib/spatial/geocoding.service.js",
+      "line": 160,
+      "code": "const res = await fetch(url, {"
+    },
+    {
+      "file": "app/src/lib/spatial/geocoding.service.js",
+      "line": 242,
+      "code": "const res = await fetch(url, {"
+    },
+    {
+      "file": "app/src/lib/youth-credits.js",
+      "line": 430,
+      "code": "const res = await fetch('/api/youth/leaderboard', {"
+    },
+    {
+      "file": "app/src/modules/admin/DataManagement.jsx",
+      "line": 43,
+      "code": "const res = await fetch(url);"
+    },
+    {
+      "file": "app/src/modules/admin/DataManagement.jsx",
+      "line": 52,
+      "code": "const res = await fetch(url, {"
+    },
+    {
+      "file": "app/src/modules/admin/DataManagement.jsx",
+      "line": 65,
+      "code": "const res = await fetch(url, { method: 'DELETE' });"
+    },
+    {
+      "file": "app/src/modules/citizen/CitizenPortal.jsx",
+      "line": 129,
+      "code": "const res = await fetch(url);"
+    },
+    {
+      "file": "app/src/modules/citizen/CitizenPortal.jsx",
+      "line": 214,
+      "code": "const res = await fetch('/api/iot/latest?deviceId=DG-IOT-001');"
+    },
+    {
+      "file": "app/src/modules/citizen/CitizenPortal.jsx",
+      "line": 243,
+      "code": "const res = await fetch('/api/complaints');"
+    },
+    {
+      "file": "app/src/modules/citizen/CitizenReport.jsx",
+      "line": 313,
+      "code": "fetch('/api/map')"
+    },
+    {
+      "file": "app/src/modules/citizen/CitizenTrack.jsx",
+      "line": 151,
+      "code": "const res = await fetch('/api/complaints');"
+    },
+    {
+      "file": "app/src/modules/citizen/CitizenTrack.jsx",
+      "line": 183,
+      "code": "const singleRes = await fetch(`/api/complaints/${encodeURIComponent(paramId)}`);"
+    },
+    {
+      "file": "app/src/modules/documents/DocumentEditorPage.jsx",
+      "line": 52,
+      "code": "fetch(`/api/sites/${siteIdParam}`, { credentials: 'include' })"
+    },
+    {
+      "file": "app/src/modules/documents/DocumentEditorPage.jsx",
+      "line": 68,
+      "code": "fetch(`/api/documents/drafts/${id}`, {"
+    },
+    {
+      "file": "app/src/modules/documents/DocumentEditorPage.jsx",
+      "line": 129,
+      "code": "const res = await fetch(endpoint, {"
+    },
+    {
+      "file": "app/src/modules/documents/DocumentEditorPage.jsx",
+      "line": 171,
+      "code": "const res = await fetch('/api/documents/export-docx', {"
+    },
+    {
+      "file": "app/src/modules/documents/DocumentPreviewPage.jsx",
+      "line": 20,
+      "code": "fetch(`/api/documents/drafts/${id}`, {"
+    },
+    {
+      "file": "app/src/modules/documents/DocumentPreviewPage.jsx",
+      "line": 32,
+      "code": "fetch(`/api/documents/drafts/${id}/verify-signature`, { credentials: 'include' })"
+    },
+    {
+      "file": "app/src/modules/documents/DocumentPreviewPage.jsx",
+      "line": 63,
+      "code": "const res = await fetch(`/api/documents/drafts/${id}/sign`, {"
+    },
+    {
+      "file": "app/src/modules/documents/DocumentsListPage.jsx",
+      "line": 44,
+      "code": "const res = await fetch('/api/documents', {"
+    },
+    {
+      "file": "app/src/modules/iot/IoTDashboard.jsx",
+      "line": 35,
+      "code": "const resLatest = await fetch(`/api/iot/v1/devices/${deviceId}/latest`);"
+    },
+    {
+      "file": "app/src/modules/iot/IoTDashboard.jsx",
+      "line": 44,
+      "code": "const resHistory = await fetch(`/api/iot/v1/devices/${deviceId}/readings?limit=15`);"
+    },
+    {
+      "file": "app/src/modules/iot/IoTDashboard.jsx",
+      "line": 94,
+      "code": "const res = await fetch('/api/iot/v1/readings', {"
+    },
+    {
+      "file": "app/src/modules/staff/StaffSites.jsx",
+      "line": 265,
+      "code": "const response = await fetch('/api/public/provinces');"
+    },
+    {
+      "file": "app/src/modules/staff/StaffSites.jsx",
+      "line": 295,
+      "code": "const response = await fetch(`/api/public/provinces/${selectedProvinceCode}/wards`);"
+    },
+    {
+      "file": "app/src/modules/youth/services/youth-credits.service.js",
+      "line": 23,
+      "code": "const res = await fetch(`${API_BASE}/credits`, {"
+    },
+    {
+      "file": "app/src/modules/youth/services/youth-credits.service.js",
+      "line": 62,
+      "code": "const res = await fetch(`${API_BASE}/claim`, {"
+    },
+    {
+      "file": "app/src/modules/youth/services/youth-credits.service.js",
+      "line": 97,
+      "code": "const res = await fetch(`${API_BASE}/certificate`, {"
+    },
+    {
+      "file": "app/src/modules/youth/services/youth-credits.service.js",
+      "line": 112,
+      "code": "const res = await fetch(`${API_BASE}/certificate/${encodeURIComponent(codeOrId)}`, {"
+    },
+    {
+      "file": "app/src/modules/youth/services/youth-credits.service.js",
+      "line": 135,
+      "code": "const res = await fetch(`${API_BASE}/certificate/verify?${query.toString()}`);"
+    },
+    {
+      "file": "app/src/modules/youth/services/youth-credits.service.js",
+      "line": 181,
+      "code": "const res = await fetch(`${API_BASE}/leaderboard`, {"
+    },
+    {
+      "file": "apps/web/src/api/client.ts",
+      "line": 34,
+      "code": "const response = await fetch(url, {"
+    },
+    {
+      "file": "apps/web/src/pages/DashboardPage.tsx",
+      "line": 158,
+      "code": "const res = await fetch('/api/iot/latest?deviceId=DG-IOT-001');"
+    },
+    {
+      "file": "apps/web/src/pages/IoTDevicePage.tsx",
+      "line": 38,
+      "code": "const res = await fetch(`/api/iot/device/${id || 'DG-IOT-001'}`);"
+    },
+    {
+      "file": "apps/web/src/pages/IoTSettingsPage.tsx",
+      "line": 69,
+      "code": "const res = await fetch('/api/iot/latest?deviceId=DG-IOT-001');"
+    },
+    {
+      "file": "apps/web/src/pages/IoTSettingsPage.tsx",
+      "line": 99,
+      "code": "const res = await fetch('/api/iot/device/DG-IOT-001', {"
+    },
+    {
+      "file": "apps/web/src/pages/IoTSettingsPage.tsx",
+      "line": 120,
+      "code": "const res = await fetch('/api/iot/wifi', {"
+    },
+    {
+      "file": "apps/web/src/pages/IoTSettingsPage.tsx",
+      "line": 144,
+      "code": "const res = await fetch('/api/iot/wifi', {"
+    },
+    {
+      "file": "apps/web/src/pages/LoginPage.tsx",
+      "line": 138,
+      "code": "let response = await fetch(opsUrl, {"
+    },
+    {
+      "file": "apps/web/src/pages/LoginPage.tsx",
+      "line": 151,
+      "code": "response = await fetch(`${OPERATIONS_APP_URL}/api/auth/login`, {"
+    },
+    {
+      "file": "apps/web/src/services/geocoding.ts",
+      "line": 107,
+      "code": "const res = await fetch(url, { signal: controller.signal });"
+    },
+    {
+      "file": "apps/web/src/utils/geocoding.ts",
+      "line": 57,
+      "code": "const res = await fetch(url);"
+    },
+    {
+      "file": "apps/web/src/utils/geocoding.ts",
+      "line": 108,
+      "code": "const res = await fetch(url);"
+    },
+    {
+      "file": "dustguard-operations/apps/web/src/api/client.ts",
+      "line": 34,
+      "code": "const res = await fetch(finalUrl, {"
+    }
+  ],
+  "axios": []
+}

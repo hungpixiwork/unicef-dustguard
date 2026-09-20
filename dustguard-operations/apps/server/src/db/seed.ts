@@ -97,11 +97,11 @@ export function seedDatabase() {
   for (const t of tables) {
     try {
       db.exec(`DROP TABLE IF EXISTS ${t};`);
-    } catch (e) {}
+    } catch (e) { }
   }
   try {
     db.exec(`DROP TABLE IF EXISTS legal_sections_fts;`);
-  } catch (e) {}
+  } catch (e) { }
   db.exec('PRAGMA foreign_keys = ON;');
 
   runMigrations(false);
@@ -394,7 +394,7 @@ export function seedDatabase() {
         case_code: 'DG-2026-OP-003',
         title: 'Tập kết cát đá không che bạt gây bụi đường Nguyễn Chí Thanh',
         description: 'Bãi vật liệu lộ thiên diện tích 300m2 cạnh khu dân cư không che phủ bạt, những ngày nắng gắt gió mạnh bụi thô bay vào nhà dân.',
-        location_text: 'Đối diện số 62 Nguyễn Chí Thanh, Phường Láng Thượng, Hà Nội',
+        location_text: 'Đối diện số 484 Lê Văn Việt, Hồ Chí Minh',
         district: 'Láng Thượng',
         latitude: 21.0210,
         longitude: 105.8075,
@@ -1204,7 +1204,7 @@ export function seedDatabase() {
         id: 'dev-sim-01',
         device_code: 'SENSOR-DEV-SIM',
         name: 'Trạm Thử Nghiệm Simulator (Hà Nội)',
-        location_text: '62 Nguyễn Chí Thanh, Phường Láng Thượng, Hà Nội',
+        location_text: '484 Lê Văn Việt, Hồ Chí Minh',
         latitude: 21.0205,
         longitude: 105.8078,
         status: 'ONLINE',
