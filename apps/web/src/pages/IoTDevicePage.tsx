@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useIoTLiveState } from '../hooks/useIoTLiveState.js';
 import {
   ArrowLeft,
   Activity,
@@ -27,38 +28,47 @@ interface TelemetryPoint {
 
 export const IoTDevicePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const targetId = id || 'DG-IOT-001';
+
+  // Hook SSOT: Live Telemetry Polling 15s có Page Visibility API deduplication (Zero-D1 Reads)
+  const { data: liveData, isOnline, loading: liveLoading, refetch } = useIoTLiveState(targetId);
+
   const [device, setDevice] = useState<any>(null);
   const [latest, setLatest] = useState<any>(null);
   const [history, setHistory] = useState<TelemetryPoint[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchDetail = async () => {
+  useEffect(() => {
+    if (liveData?.device) {
+      setDevice(liveData.device);
+      setLatest(liveData.telemetry);
+    }
+  }, [liveData]);
+
+  // Tải lịch sử D1 THEO NHU CẦU (Chỉ khi người dùng nhấn nút hoặc chọn khoảng thời gian)
+  const [selectedRange, setSelectedRange] = useState<'1h' | '24h' | '7d'>('24h');
+
+  const fetchHistory = useCallback(async (range: '1h' | '24h' | '7d' = selectedRange) => {
+    setHistoryLoading(true);
+    setShowHistory(true);
+    setSelectedRange(range);
     try {
-      const res = await fetch(`/api/iot/device/${id || 'DG-IOT-001'}`);
+      const res = await fetch(`/api/iot/history/${targetId}?range=${range}&limit=50`);
       if (res.ok) {
         const json = await res.json();
-        if (json.success && json.data) {
-          setDevice(json.data.device);
-          setLatest(json.data.latest);
-          setHistory(json.data.history || []);
-        }
+        const rawHistory = json.data?.history || json.history || json.data?.readings || json.readings || json.data?.items || json.data || [];
+        setHistory(Array.isArray(rawHistory) ? rawHistory : []);
       }
     } catch (err) {
-      console.warn('Lỗi tải chi tiết thiết bị IoT:', err);
+      console.warn('Lỗi tải lịch sử IoT:', err);
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      setHistoryLoading(false);
     }
-  };
+  }, [targetId, selectedRange]);
 
-  useEffect(() => {
-    fetchDetail();
-    const interval = setInterval(fetchDetail, 3000);
-    return () => clearInterval(interval);
-  }, [id]);
-
-  const isOnline = Boolean(device?.isOnline);
+  const loading = liveLoading && !device;
 
   // Tính max PM2.5 cho scale chart thật
   const maxPm25 = history.length > 0 ? Math.max(...history.map((h) => h.pm25), 50) : 50;
@@ -96,7 +106,7 @@ export const IoTDevicePage: React.FC = () => {
               <span>Mã thiết bị:</span>
               <span className="font-mono font-bold text-slate-700">{device?.device_code || id}</span>
               <span>·</span>
-              <span>{device?.location_text || '62 Nguyễn Chí Thanh, Hà Nội'}</span>
+              <span>{device?.location_text || 'Vị trí trạm quan trắc'}</span>
               <span>·</span>
               <span className="font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200 text-[11px]">
                 Cách bạn ~120m
@@ -106,12 +116,13 @@ export const IoTDevicePage: React.FC = () => {
         </div>
 
         <button
-          onClick={() => {
+          onClick={async () => {
             setRefreshing(true);
-            fetchDetail();
+            await refetch(true);
+            setRefreshing(false);
           }}
           disabled={refreshing}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-stone-50 border border-stone-200 px-3 py-2 rounded-xl shadow-2xs transition-all"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-stone-50 border border-stone-200 px-3 py-2 rounded-xl shadow-2xs transition-all cursor-pointer"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-teal-600' : ''}`} />
           <span>Làm mới</span>
@@ -207,15 +218,15 @@ export const IoTDevicePage: React.FC = () => {
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-stone-200 text-xs space-y-1">
-          <span className="text-slate-500 font-semibold">Tần suất truyền tin</span>
+          <span className="text-slate-500 font-semibold">Tần suất làm mới</span>
           <div className="text-base font-black text-slate-900">
-            3.5 giây / lần
+            15 giây / lần
           </div>
-          <span className="text-[10px] text-slate-400">Thời gian thực (Live)</span>
+          <span className="text-[10px] text-slate-400">Live (Khi tab mở)</span>
         </div>
       </div>
 
-      {/* BIỂU ĐỒ LỊCH SỬ THỰC TẾ (KHÔNG DÙNG DỮ LIỆU GIẢ - SSOT) */}
+      {/* BIỂU ĐỒ LỊCH SỬ THỰC TẾ (ON-DEMAND TỪ D1 - ZERO SPAM) */}
       <div className="p-6 rounded-3xl bg-white border border-stone-200 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-stone-100">
           <div>
@@ -224,17 +235,62 @@ export const IoTDevicePage: React.FC = () => {
               <span>Dòng lịch sử đo đạc thực tế (Telemetry Time-Series)</span>
             </h2>
             <p className="text-xs text-slate-500 font-medium mt-0.5">
-              {history.length > 0
-                ? `Biểu diễn trung thực ${history.length} mẫu đo gần nhất nhận từ cảm biến ASAIR APM2000`
-                : 'Đang chờ ghi nhận các mẫu đo đầu tiên từ thiết bị...'}
+              Lưu trữ D1 theo nhu cầu (On-demand) — Tiết kiệm tài nguyên Cloudflare
             </p>
           </div>
-          <span className="text-xs font-bold text-slate-500">
-            Tự động cập nhật mỗi 3s
-          </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Bộ lọc khoảng thời gian: 1h, 24h, 7d */}
+            <div className="inline-flex items-center bg-stone-100 p-1 rounded-xl border border-stone-200">
+              {(['1h', '24h', '7d'] as const).map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => fetchHistory(r)}
+                  disabled={historyLoading}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors min-h-[36px] ${
+                    selectedRange === r
+                      ? 'bg-white text-slate-900 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {r === '1h' ? '1 giờ' : r === '24h' ? '24 giờ' : '7 ngày'}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => fetchHistory(selectedRange)}
+              disabled={historyLoading}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-800 hover:bg-teal-900 text-white text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer min-h-[44px]"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${historyLoading ? 'animate-spin' : ''}`} />
+              <span>{showHistory ? 'Cập nhật lịch sử D1' : 'Xem biểu đồ lịch sử'}</span>
+            </button>
+          </div>
         </div>
 
-        {history.length > 0 ? (
+        {!showHistory ? (
+          <div className="py-8 text-center bg-stone-50 rounded-2xl border border-dashed border-stone-200 space-y-3">
+            <BarChart3 className="w-8 h-8 text-slate-400 mx-auto" />
+            <p className="text-xs text-slate-600 font-medium">
+              Biểu đồ lịch sử được nạp theo nhu cầu để tối ưu hóa hạn ngạch Cloudflare D1.
+            </p>
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              {(['1h', '24h', '7d'] as const).map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => fetchHistory(r)}
+                  disabled={historyLoading}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white hover:bg-stone-100 text-slate-800 border border-stone-300 text-xs font-bold transition-colors shadow-2xs cursor-pointer min-h-[44px]"
+                >
+                  <span>Xem {r === '1h' ? '1 giờ qua' : r === '24h' ? '24 giờ qua' : '7 ngày qua'}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : history.length > 0 ? (
           <div className="space-y-4">
             {/* Visual Bar Chart (Cột không bị kéo giãn quá cỡ khi có ít mẫu) */}
             <div className="h-48 flex items-end justify-start gap-2 pt-6 pb-2 px-3 bg-stone-50 rounded-2xl border border-stone-200 overflow-x-auto">

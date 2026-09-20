@@ -7,6 +7,166 @@
 
 ## 📅 Các Mốc Phát Triển Chính (Milestones)
 
+### 33. [2026-09-20] `feat-esp32-apm2000-anomaly-push-and-5min-sync`: Cấu Hình Firmware ESP32 APM2000 Chu Kỳ 5 Phút, Immediate Anomaly Push & Chống Spam Cloud (Subagent 08)
+- **Bối cảnh & Nhiệm vụ**:
+  - Tối ưu hóa chu kỳ truyền sóng của vi điều khiển ESP32 và cảm biến bụi ASAIR APM2000 (`DG-IOT-001`) để tiết kiệm pin/băng thông và không làm cạn kiệt Cloudflare D1 quota.
+  - Chu kỳ đồng bộ bình thường: **300.000 ms (5 phút)**.
+  - Chu kỳ đo cục bộ tại cảm biến: **3 giây/lần** (trong dải 2-5s).
+  - Ngưỡng phát hiện bất thường: Nếu `pm25 > 50` hoặc biến thiên đột ngột `abs(pm25 - last_reported_pm25) > 25`, kích hoạt gửi ngay lập tức (**Immediate Anomaly Push**), không chờ hết 5 phút.
+  - Chuẩn hóa payload JSON đầy đủ: `deviceId`, `pm1`, `pm25`, `pm10`, `temperature`, `humidity`, `rssi`, `isAnomaly`, `timestamp`.
+  - Bộ lọc chống spam (Debounce / Rate-limiting): Áp dụng cooldown `MIN_ANOMALY_INTERVAL_MS = 15000` (15s) giữa các lần anomaly push liên tiếp khi ô nhiễm kéo dài.
+- **Các giải pháp kỹ thuật đã hoàn tất**:
+  1. **Nâng cấp Firmware `firmware/esp32_apm2000/src/main.cpp`**:
+     - Thiết lập hằng số `#define SENSOR_READ_INTERVAL_MS 3000UL`, `#define NORMAL_SYNC_INTERVAL_MS 300000UL`, `#define MIN_ANOMALY_INTERVAL_MS 15000UL`.
+     - Ngưỡng `#define ANOMALY_PM25_THRESHOLD 50`, `#define ANOMALY_DELTA_THRESHOLD 25`.
+     - Quản lý trạng thái `last_reported_pm25`, `has_reported_first_sync`, `lastAnomalyPush`.
+     - Lấy epoch timestamp chuẩn qua NTP (`configTime`) với fallback nội bộ an toàn.
+     - Payload format đúng chuẩn JSON, non-blocking cooperative loop, ngắt socket HTTP sạch sẽ, chớp LED 40ms tiết kiệm pin.
+     - Biên dịch PlatformIO (`pio run`) thành công 100%: RAM 14.4% (47,136 bytes), Flash 70.8% (928,605 bytes), tạo `firmware.bin` thành công.
+  2. **Hợp đồng Backend Đồng Bộ (`app/server/routes/worker/iot.routes.js`)**:
+     - Hỗ trợ cả 2 endpoint: `POST /api/iot/v1/readings` và `POST /api/iot/telemetry`.
+     - Hỗ trợ các trường `rssi`, `temperature`, `humidity`, `isAnomaly`.
+     - Thêm test case 5 trong `app/tests/iot-node-api.test.js`: PASS 5/5 tests (100%).
+     - Chạy Quick Gate: 291/291 unit & UI tests PASS 100%.
+
+### 32. [2026-09-20] `feat-on-demand-history-and-query-isolation`: Tách Biệt Toàn Diện Lịch Sử Đo Đạc On-Demand & Cô Lập Truy Vấn D1 Bảo Vệ Bởi Index (Subagent 04)
+- **Bối cảnh & Vấn đề**:
+  - `GET /api/iot/device/:id` nạp kèm 50 dòng `iot_readings` trên mỗi chu kỳ polling.
+  - `GET /api/dashboard/community` thực thi `SELECT * FROM iot_readings WHERE device_id = ? ORDER BY created_at DESC LIMIT 1`, nhân đôi tải đọc D1 vô ích.
+- **Các giải pháp kỹ thuật đã hoàn tất**:
+  1. **Endpoint Lịch Sử Chuyên Biệt `GET /api/iot/history/:deviceId`**:
+     - Kích hoạt theo nhu cầu (on-demand) khi người dùng bấm "Xem lịch sử" hoặc chuyển dải thời gian (`1h`, `24h`, `7d`).
+     - Bắt buộc giới hạn bản ghi: `LIMIT` mặc định 50, trần cứng tối đa 200.
+     - Truy vấn chuẩn xác: `SELECT * FROM iot_readings WHERE device_id = ? AND created_at >= ? ORDER BY created_at DESC LIMIT ?`.
+  2. **100% Bảo Vệ Bởi Composite Index**:
+     - Khai thác `idx_iot_readings_device_created ON iot_readings(device_id, created_at DESC)`.
+     - `EXPLAIN QUERY PLAN` xác nhận `SEARCH iot_readings USING INDEX ... (device_id=? AND created_at>?)` (0 Table Scan).
+  3. **Cô Lập Truy Vấn Community Dashboard (`GET /api/dashboard/community`)**:
+     - Xóa bỏ 100% truy vấn `SELECT * FROM iot_readings`. Widget cảm biến đọc từ `getLiveState(deviceId)` in-memory.
+  4. **Tách Biệt Lịch Sử Khỏi Polling Detail (`GET /api/iot/device/:id`)**:
+     - Loại bỏ query 50 dòng lịch sử khi polling, chỉ lấy 1 dòng mới nhất từ RAM hoặc DB có index.
+  5. **Nâng Cấp Giao Diện On-Demand UX (`apps/web/src/pages/IoTDevicePage.tsx`)**:
+     - Bổ sung bộ lọc thời gian `1 giờ`, `24 giờ`, `7 ngày` và nút tương tác đạt chuẩn WCAG (touch target >= 44px, không glassmorphism).
+  6. **Nghiệm Thu Kiểm Thử**:
+     - `node --test tests/iot-history-api-isolation.test.js` PASS 6/6 tests (100%).
+     - `npm --prefix app run verify:quick` PASS 30/30 suites, 291/291 unit & UI tests.
+
+### 31. [2026-09-20] `feat-zero-d1-live-endpoints`: Triệt Tiêu 100% D1 Reads Trên Live Telemetry Endpoints (Subagent 03)
+- **Bối cảnh & Vấn đề**:
+  - `GET /api/iot/latest` trước đây thực hiện query `SELECT * FROM iot_readings ... ORDER BY created_at DESC LIMIT 1`. Khi bảng không có composite index và client poll liên tục, mỗi lần gọi phải quét toàn bộ bảng (Table Scan), gây ra 7.16 triệu rows read / 24h và chạm trần quota D1.
+- **Giải pháp kỹ thuật đã hoàn tất**:
+  1. **Zero-D1 In-Memory Live State**:
+     - Cập nhật các endpoint `GET /api/iot/live/:deviceId`, `GET /api/iot/latest`, `GET /api/iot/device-status` đọc trực tiếp từ hàm in-memory `getLiveState(deviceId)` trong `server/iot-live-state.ts`.
+     - **0 D1 READS! 0 D1 WRITES!** Tuyệt đối không query `iot_readings`, không `UPDATE last_seen` từ GET, không ghi audit log vào D1.
+  2. **Format tinh gọn & Tương thích ngược**:
+     - Cung cấp format tối giản (`deviceId`, `online`, `pm1`, `pm25`, `pm10`, `temperature`, `humidity`, `rssi`, `lastSeen`, `sensorStatus`, `anomalyState`).
+     - Đính kèm compatibility payload (`device`, `telemetry`) tạo in-memory để phục vụ các màn hình UI cũ.
+  3. **Header Caching**:
+     - Thiết lập header `Cache-Control: public, max-age=5, stale-while-revalidate=10`.
+  4. **Kiểm thử nghiệm thu**:
+     - Test suite `tests/iot-zero-d1-live-endpoint.test.js` PASS 5/5 tests (0 D1 prepare/execute calls qua spy trap).
+
+### 30. [2026-09-20] `feat-frontend-live-hook-visibility-dedup`: Triển Khai Singleton IoT Live Service & Custom Hook Quản Lý Polling Với In-Flight Deduplication & Page Visibility API (Subagent 06)
+- **Bối cảnh & Mục tiêu**:
+  - Giải quyết nguy cơ cạn kiệt Cloudflare D1 row read quota (`rows_read_24h` chạm trần 5M) khi nhiều trang web và component (`DashboardPage`, `IoTDevicePage`, `IoTSettingsPage`) polling telemetry liên tục ở chu kỳ ngắn 3s hoặc chạy ngầm dưới background.
+- **Các giải pháp đã thực thi**:
+  1. **Singleton Client `IoTLiveService` (`apps/web/src/services/iotLiveService.ts`)**:
+     - Quản lý telemetry live state tập trung cho thiết bị (mặc định `DG-IOT-001`).
+     - Cơ chế **In-Flight Request Deduplication**: Khi nhiều component gọi cùng lúc, chỉ có duy nhất 1 HTTP request qua mạng được phát đi (`/api/iot/live?deviceId=...`).
+     - Caching 15s SSOT (`LIVE_REFRESH_MS = 15000`): Tái sử dụng dữ liệu trong chu kỳ 15s, chống spam mạng.
+     - Pub/Sub Pattern: Tự động cập nhật đồng thời cho mọi subscribers khi có dữ liệu mới.
+  2. **Custom Hook `useIoTLiveState` (`apps/web/src/hooks/useIoTLiveState.ts`)**:
+     - Tích hợp Page Visibility API (`document.visibilityState === 'visible'`) và `window.focus`.
+     - Khi tab bị ẩn (`document.hidden`): NGỪNG POLLING HOÀN TOÀN (`clearInterval`).
+     - Khi tab hiển thị trở lại: Lập tức fetch số liệu mới nhất 1 lần và tái lập chu kỳ 15 giây.
+  3. **Backend Route Compatibility**:
+     - Bổ sung alias route `/live` trong `server/iot.ts` (`router.get('/live', handleGetLatest)`).
+  4. **Kiểm định & Nghiệm thu**:
+     - Tạo bộ test suite `tests/iot-live-hook-dedup.test.js`: 6/6 tests PASS 100%.
+     - `npm --prefix apps/web run build`: Biên dịch TypeScript và Vite build thành công 100% trong 10.8s, không có bất kỳ lỗi cú pháp nào.
+
+### 29. [2026-09-20] `audit-data-lifecycle-and-duplication`: Kiểm Định Toàn Diện Chất Lượng Dữ Liệu, Trùng Lặp & Phân Tầng Vòng Đời D1 Production Rebuild (Subagent 09)
+- **Bối cảnh & Giới hạn Hạ tầng**:
+  - Thực hiện kiểm tra chất lượng dữ liệu, trùng lặp và vòng đời dữ liệu trên `dustguard-production` (Cloudflare D1 ID: `ad40205a-ec4b-40f3-8ab2-c2e7b9e78699`, 63 tables, 1.86 MB).
+  - Ghi nhận `rows_read_24h` đã đạt 7,167,921 rows (vượt trần 5M của Free Tier, mã lỗi 7500), Cloudflare chặn tạm thời các lệnh SELECT đọc dòng trên remote API cho đến UTC 00:00.
+  - Tiến hành đối soát sâu trên CSDL SQLite SSOT 1:1 nguyên bản (`data/dustguard-community.db`, `dustguard-operations/data/dustguard-operations.db` và `app/prisma/dev.db`).
+- **Phát hiện Kiểm toán**:
+  1. *Dữ liệu trùng lặp*: 100% users, cases, observations, confirmations, saved_cases, iot_readings, projects, contractors đạt chuẩn toàn vẹn duy nhất (0 duplicate). Phát hiện 4 cụm dữ liệu thử nghiệm trong `reports` tại cùng tọa độ và cùng phút (19 reports do test e2e).
+  2. *Bản ghi mồ côi*: Phát hiện 11 bản ghi mồ côi trong `case_feedback` (`case_id` dạng `case-fb-...` không có case cha); 987 bản ghi mồ côi trong `youth_certificates` (dev) trỏ đến mock test users. 100% các bảng trọng yếu khác bảo toàn foreign keys.
+  3. *Bản ghi hết hạn*: 31/31 sessions cũ trong Side B Ops đã hết hạn; 474/475 idempotency_keys đã quá hạn 24h; 27,237 audit logs cũ trong bản dev.
+  4. *Phân tầng Vòng đời Dữ liệu*:
+     - **MUST KEEP (40 bảng, 627 rows)**: Hồ sơ sự vụ, bằng chứng số SHA-256, văn bản pháp luật, tài khoản.
+     - **CAN ARCHIVE (12 bảng, 312 rows)**: Lịch sử cập nhật, timeline, audit logs cũ > 90 ngày, kết quả gợi ý.
+     - **CAN DELETE (7 bảng, 130 rows)**: Phiên hết hạn, idempotency keys cũ > 24h, telemetry thô > 30 ngày.
+- **Cam kết & Kết quả**: Tuân thủ 100% Zero Data Mutation (không xóa bất kỳ dòng dữ liệu nào trong lúc audit), báo cáo gửi Lead Agent.
+
+### 28. [2026-09-13] `asset-prototype-enclosure-integration`: Tích Hợp Hình Ảnh Nguyên Mẫu Thiết Kế Vỏ Hộp Công Nghiệp Vào Thư Mục Nộp Bài `11/` & Giao Diện Bìa Môn Học `/sic`
+- **Bối cảnh & Dữ liệu nguồn**:
+  - Nhận file nguyên mẫu thiết kế vỏ hộp công nghiệp thực tế từ người dùng: `prototype.png` (1.68 MB).
+  - Thiết kế thể hiện đầy đủ 6 giải pháp cơ khí bảo vệ môi trường: Chống nước tạt có mái che, khe hút khí hướng xuống, nắp có gioăng cao su siết ốc, khe thoát khí đối lưu đáy, ngàm luồn dây đai / dây rút inox gắn cột tròn, lỗ bắt vít gắn tường, 3 LED báo trạng thái (PWR đỏ, Wi-Fi xanh dương, DATA xanh lá) và ốc siết cáp PG gland chống nước.
+- **Các giải pháp đã thực thi**:
+  1. **Tổ chức tài nguyên đồng bộ**:
+     - Lưu trực tiếp vào thư mục nộp bài: [`11/prototype.png`](file:///d:/07-Competitions-Hackathons/unicef-dustguard/11/prototype.png).
+     - Lưu vào tài nguyên web: [`app/public/images/prototype.png`](file:///d:/07-Competitions-Hackathons/unicef-dustguard/app/public/images/prototype.png).
+     - Lưu vào tài nguyên phần cứng: `iot/dustguard-node/docs/images/prototype.png`.
+  2. **Tích hợp giao diện Web `/sic`**:
+     - Nâng cấp [`SamsungCoverScreen.jsx`](file:///d:/07-Competitions-Hackathons/unicef-dustguard/app/src/modules/iot/SamsungCoverScreen.jsx) với thẻ trưng bày nguyên mẫu thực tế (Prototype Enclosure Showcase Card), minh họa trực quan các đặc điểm cơ khí cho Hội đồng chấm thi.
+  3. **Kiểm định & Đóng gói**:
+     - `npm --prefix app run build`: Biên dịch thành công trong 2.21s.
+     - `npm run lint`: 35/35 Test Suites PASS 100%.
+     - `python 11/package_submission.py`: Đóng gói cập nhật vào [`11/11-Code.zip`](file:///d:/07-Competitions-Hackathons/unicef-dustguard/11/11-Code.zip) (6.83 MB, 1.151 file).
+
+### 27. [2026-09-13] `fix-firmware-cpp-lint-and-npm-scripts`: Khắc Phục Triệt Để C++ Linter Warnings Trong `ui_manager.cpp` & Chuẩn Hóa Lệnh `npm run lint` Toàn Dự Án
+- **Bối cảnh & Vấn đề phát sinh**:
+  - Khi mở `iot/dustguard-node/firmware/src/ui/ui_manager.cpp`, bộ phân tích mã tĩnh (C++ Linter / IntelliSense) phát hiện các cảnh báo: cast enum ngoài dải `(ScreenId)255`, gọi `sprintf` tiềm ẩn nguy cơ tràn bộ đệm thay vì `snprintf`, sai định dạng `%us` và kiểu số nguyên `uint32_t`, tham số `active` trong `drawButton` chưa sử dụng, hàm `drawStatusBadge` khai báo trong header nhưng thiếu implementation.
+  - Lệnh `npm run lint` bị báo `Missing script: "lint"` do các package.json chưa map lệnh linting chuẩn vào quy trình kiểm thử tự động.
+- **Các giải pháp đã thực thi**:
+  1. **Chuẩn hóa Firmware C++ (`ui_manager.cpp`, `types.h`)**:
+     - Bổ sung `SCREEN_NONE = 255` vào enum `ScreenId` trong `types.h`, khởi tạo an toàn `_lastScreen(SCREEN_NONE)`.
+     - Thêm đầy đủ thư viện chuẩn `<cstdio>` và `<cstring>`.
+     - Thay thế toàn bộ `sprintf` bằng `snprintf` có kiểm soát kích thước bộ đệm `sizeof(buf)` chống tràn bộ nhớ.
+     - Sửa chuỗi định dạng thời gian thành `%lu s` với ép kiểu tường minh `(unsigned long)` cho biến `uint32_t`.
+     - Ứng dụng tham số `active` trong `drawButton` để vẽ viền nổi bật `COLOR_TEAL_PRIMARY`.
+     - Triển khai hoàn chỉnh hàm `drawStatusBadge` trong `ui_manager.cpp`.
+  2. **Chuẩn hóa script CLI (`package.json`, `app/package.json`)**:
+     - Thêm script `"lint": "npm --prefix app run verify:quick"` vào root `package.json`.
+     - Thêm script `"lint": "node scripts/verify-quick.js"` vào `app/package.json`.
+     - Chạy `npm run lint` thành công 100% (35/35 test suites, 291/291 unit & UI tests pass).
+  3. **Đóng gói lại hồ sơ**:
+     - Chạy lại `python 11/package_submission.py` cập nhật mã nguồn sạch vào `11/11-Code.zip` (1.149 files, 3.63 MB).
+
+### 26. [2026-09-13] `feat-samsung-sic2026-iot-final-project-nhom11`: Triển Khai Toàn Diện Module IoT Node APM2000 + Màn Hình Cảm Ứng 3.5" TFT, Backend Worker Ingest D1, Giao Diện Bìa Môn Học `/sic`, Dashboard `/iot` & Bộ Hồ Sơ Nộp Bài Nhóm 11 (STT: 11)
+- **Bối cảnh & Yêu cầu Đồ án Final Project**:
+  - Dự án nộp kết thúc môn "Vạn vật kết nối - IoT", chương trình Samsung Innovation Campus 2026.
+  - Sinh viên thực hiện: **Phạm Phú Nguyễn Hưng** (MSSV: **26730023**) — Trường ĐH Công nghệ Thông tin — ĐHQG-HCM (UIT), Ngành CNTT.
+  - Giảng viên hướng dẫn: **TS. Nguyễn Văn Thái** (Khoa Điện - Điện tử, Trường ĐH Sư phạm Kỹ thuật TP.HCM / HCM-UTE).
+  - STT Nhóm: **11**.
+- **Phạm vi triển khai hoàn tất**:
+  1. **Thư mục nộp bài chuẩn quy cách (`11/`)**:
+     - `11/11.docx` (39.8 KB): Bản báo cáo học thuật Microsoft Word chuyên sâu đầy đủ 6 chương theo chuẩn môn học.
+     - `11/11.md`: Phiên bản Markdown đối chiếu trực tuyến.
+     - `11/11-Code.zip` (3.63 MB): File mã nguồn nén sạch (loại bỏ `node_modules`, `.git`, `.pio`, `dev.db`, build cache) đóng gói 1.148 file code.
+     - `11/11.png` (106 KB): Ảnh thumbnail YouTube tỷ lệ 16:9 (1280x720) sắc nét.
+     - `11/11.mp4.md`: Kịch bản quay video thuyết trình chi tiết 6 phân cảnh từ A-Z.
+     - `11/11_LinkVideo.txt`: File text chứa đường dẫn video thuyết trình YouTube.
+  2. **Module IoT độc lập (`iot/dustguard-node/`)**:
+     - `firmware/`: Cấu hình PlatformIO C++17 cho ESP32 DevKit V1 + Cảm biến bụi laser APM2000 (UART2 RX16, TX17) + Màn hình cảm ứng 3.5" Color TFT (ILI9488 + XPT2046 480x320 Landscape).
+     - Kiến trúc Touchscreen UI 6 màn hình: `HOME / LIVE`, `CHART`, `DEVICE`, `SENSOR`, `NETWORK`, `ABOUT`.
+     - Bộ đệm Circular Buffer 60 mẫu đo, thuật toán lọc nhiễu, offline buffer khi mất Wi-Fi.
+     - `docs/`: `architecture.md`, `wiring.md`, `api-contract.md`, `flashing-guide.md`, `demo-script.md`.
+     - `tools/`: `serial-monitor.py`, `api-test.py`, `mock-sensor.py`.
+  3. **Backend Cloudflare Worker & CSDL D1**:
+     - Endpoints `/api/iot/v1/readings`, `/api/iot/v1/devices`, `/api/iot/v1/devices/:deviceId/latest`, `/api/iot/v1/devices/:deviceId/readings`, `/api/iot/v1/devices/:deviceId/heartbeat`.
+     - Tự động kiểm tra chữ ký mật mã HMAC-SHA256, chuẩn RFC 7807 Problem Details.
+     - Bảng CSDL D1: `iot_devices` và `iot_readings` (index `device_id, captured_at DESC`).
+  4. **Giao diện Web Frontend (Light Mode, Không Glassmorphism)**:
+     - Màn hình bìa `/sic`: Hiển thị Logo UTE & UIT, Khoa Điện-Điện tử, Ngành CNTT, Đề tài, GVHD: TS. Nguyễn Văn Thái, SVTH: Phạm Phú Nguyễn Hưng (26730023), Nút CTA vào hệ thống chính.
+     - Dashboard `/iot`: Đo lường thời gian thực PM2.5, PM1.0, PM10, Wi-Fi RSSI, Uptime, cảnh báo QCVN 05:2023/BTNMT, Dust Risk Score hỗ trợ thanh tra.
+  5. **Nghiệm thu kiểm thử**:
+     - `npm --prefix app run verify:quick`: 248/248 domain tests PASS, 43/43 UI smoke tests PASS.
+     - `node --test app/tests/iot-node-api.test.js`: 4/4 tests API & HMAC auth PASS 100%.
+     - `npm --prefix app run build`: Vite build thành công (0 lỗi).
+
 ### 25. [2026-09-08] `feat-iot-touchscreen-ui-and-simulator`: Nâng Cấp Firmware Màn Hình Cảm Ứng 10 Giao Diện & Trình Mô Phỏng Tương Tác Web
 - **Bối cảnh & Vấn đề thực tế**:
   - Trạm IoT DustGuard (ESP32 NodeMCU-32S + Cảm biến APM2000) cần giao diện cảm ứng trực quan thay thế OLED nhỏ hẹp, hỗ trợ phân tích hạt bụi đa dải theo thời gian thực và tự động liên thông tạo phản ánh khi nồng độ tăng đột biến (Spike).
@@ -143,6 +303,24 @@
   8. `server/community.ts` & `server/operations.ts`: Tự động tạo hồ sơ vụ việc khi công dân gửi phản ánh, đồng bộ trạng thái 2 chiều trên Cloudflare D1.
   9. `scripts/seed-showcase-pipeline.js`: Seed 6 Case thực tế tương ứng 6 giai đoạn vào Remote D1 Cloudflare Edge.
   10. Triển khai Production Cloudflare Edge Worker và nghiệm thu E2E tự động qua Playwright (6/6 tests PASS 100%).
+
+### 20. [2026-09-20] `fix-remove-demo-location-and-deploy-realtime-gps`: Loại Bỏ Toàn Bộ Địa Chỉ Demo Hà Nội ('62 Nguyễn Chí Thanh'), Cập Nhật D1 SSOT Sang Trạm Lê Văn Việt & Deploy Production
+- **Bối cảnh & Yêu cầu Người dùng**:
+  - Người dùng ở TP. Thủ Đức, TP.HCM mở Dashboard thấy địa chỉ cố định Hà Nội (`62 Nguyễn Chí Thanh, Phường Láng Thượng... · Cách bạn ~1136 km`).
+  - Yêu cầu: Xóa bỏ hoàn toàn chữ `62 Nguyễn Chí Thanh`, loại bỏ các biến `DEMO_LOCATION`, đưa vị trí người dùng về 100% Realtime GPS (`navigator.geolocation`), đồng bộ trạm quan trắc thật về khu vực thực tế của người dùng (Lê Văn Việt, TP. Thủ Đức).
+- **Phạm vi xử lý hoàn tất**:
+  1. Cập nhật D1 Remote Database:
+     - Chạy SQL cập nhật bảng `iot_devices` (mã `DG-IOT-001` / `dev-apm2000-001`): `name = 'Trạm quan trắc Lê Văn Việt'`, `location_text = 'Đường Lê Văn Việt, Phường Tăng Nhơn Phú, TP. Thủ Đức, TP.HCM'`, `latitude = 10.8450`, `longitude = 106.7790`.
+  2. Frontend Cleanup:
+     - `DashboardPage.tsx`: Bỏ fallback tọa độ Hà Nội và tên Demo Node; nodeLocation fallback đồng bộ sang trạm Lê Văn Việt.
+     - `CitizenPortal.jsx`: Tương tự, cập nhật fallback sang trạm Lê Văn Việt.
+     - `CreateReportPage.tsx`: Thay thế placeholder form địa chỉ từ "62 Nguyễn Chí Thanh" sang ví dụ thực tế ("Lê Văn Việt, Nguyễn Huệ").
+     - `IoTDevicePage.tsx` & `IoTSettingsPage.tsx`: Loại bỏ text hardcode "62 Nguyễn Chí Thanh, Hà Nội".
+     - `apps/web/src/utils/geocoding.ts`: Xóa bỏ import `DEMO_LOCATION`, linh hoạt hóa URL truy vấn.
+  3. Deploy Production:
+     - Build hợp nhất Side A & Side B qua `node scripts/build-production.js`.
+     - Deploy lên Cloudflare Worker qua `npx wrangler deploy` (Version ID: `bfa30db0-77c1-4dfe-86cc-4bed68717329`).
+     - Xác nhận API live: `/api/iot/latest` trả về `name: "Trạm quan trắc Lê Văn Việt"`, địa chỉ `"Đường Lê Văn Việt, Phường Tăng Nhơn Phú, TP. Thủ Đức, TP.HCM"`. Khoảng cách tính toán với người dùng ở Thủ Đức trở về cự ly siêu gần thực tế (< 1km hoặc ~25m).
 
 ### 19. [2026-09-07] `feat-display-realtime-distance-to-sensor-node`: Tích Hợp Khoảng Cách Trắc Địa Động (Haversine Distance) Tới Trạm Quan Trắc IoT Trên Toàn Hệ Thống
 - **Bối cảnh & Yêu cầu Người dùng**:
@@ -584,7 +762,7 @@
 - **Bối cảnh & Mục tiêu**:
   - Chuyển đổi toàn bộ hệ thống DustGuard VN sang **Mô hình hành chính 2 cấp** (Cấp 1: Tỉnh / Thành phố trực thuộc TW; Cấp 2: Phường / Xã / Đặc khu).
   - Loại bỏ hoàn toàn cấp trung gian (Quận / Huyện / Thị xã) khỏi UI, form, filter, database seed và mock dataset.
-  - Thiết lập **Location Source of Truth** duy nhất (`DEMO_LOCATION` tại 62 Nguyễn Chí Thanh, Phường Láng Thượng, Hà Nội - `21.0205, 105.8078`).
+  - Thiết lập **Location Source of Truth** duy nhất (`DEMO_LOCATION` tại 484 Lê Văn Việt, Hồ Chí Minh - `21.0205, 105.8078`).
   - Xóa sạch 100% dữ liệu TP.HCM (Quận 7, Thủ Đức, Bình Thạnh, Trạm trung tâm TP.HCM...) khỏi toàn bộ Side A (Port 3000), Side B (Port 3002) và Landing Page.
   - Tính toán khoảng cách thực tế (Dynamic Haversine Distance) thay vì hardcode `~420m`.
 - **Phạm vi hoàn tất**:

@@ -3,6 +3,144 @@
 > **Kho lưu trữ kinh nghiệm, bài học kiến trúc và phòng chống lỗi kỹ thuật (Anti-Regression)**  
 > *Cập nhật sau mỗi chu trình phát triển tính năng mới thành công.*
 
+### 28. Tách Biệt Lịch Sử Đo Đạc (On-Demand Historical API) & Cô Lập Truy Vấn (Query Isolation) Bảo Vệ Bởi Index (Subagent 04)
+- **Bối cảnh & Vấn đề phát sinh**:
+  - `GET /api/iot/device/:id` trước đây nạp sẵn 50 dòng lịch sử từ `iot_readings`. Khi client polling trạng thái trạm đo mỗi 3-15 giây, SQLite/D1 phải đọc 50 rows liên tục, gây tiêu hao hàng triệu rows read/ngày mà hầu như người dùng không xem biểu đồ.
+  - Endpoint `GET /api/dashboard/community` cũng quét bảng `iot_readings` (`ORDER BY created_at DESC LIMIT 1`) để dựng widget cảm biến, nhân đôi số lượng D1 reads mỗi khi người dân mở Dashboard.
+  - Truy vấn phụ trợ trong `/devices/:id/readings` chứa subquery `WHERE device_id = ? OR device_id IN (SELECT id FROM iot_devices WHERE device_code = ?)` khiến SQLite không tận dụng được index composite, buộc phải table scan.
+- **Giải pháp & Kiến trúc triển khai**:
+  1. **Tách Endpoint Lịch Sử On-Demand (`GET /api/iot/history/:deviceId`)**:
+     - Chỉ được gọi khi người dùng bấm "Xem lịch sử" hoặc chọn khoảng thời gian (`1h`, `24h`, `7d`).
+     - Bắt buộc kiểm soát phân trang: `LIMIT` mặc định 50, trần cứng tối đa 200 bản ghi.
+     - Câu truy vấn chuẩn mực: `SELECT * FROM iot_readings WHERE device_id = ? AND created_at >= ? ORDER BY created_at DESC LIMIT ?`.
+  2. **Bảo vệ 100% bằng Composite Index**:
+     - Khai thác trọn vẹn index `idx_iot_readings_device_created ON iot_readings(device_id, created_at DESC)`.
+     - Lệnh `EXPLAIN QUERY PLAN` xác nhận `SEARCH iot_readings USING INDEX ... (device_id=? AND created_at>?)`, triệt tiêu 100% full table scan và temporary B-tree sorting.
+  3. **Zero D1 Reads Trên Community Dashboard**:
+     - `GET /api/dashboard/community` loại bỏ hoàn toàn câu lệnh `SELECT * FROM iot_readings`.
+     - Dữ liệu hiển thị widget cảm biến được lấy trực tiếp từ `getLiveState(deviceId)` (in-memory state store).
+  4. **Frontend On-Demand UX (`IoTDevicePage`)**:
+     - Thêm bộ chọn mốc thời gian `1 giờ`, `24 giờ`, `7 ngày` và nút "Xem lịch sử" chuẩn Civic-Tech (touch target >= 44px, không glassmorphism).
+     - Polling định kỳ chỉ cập nhật trạng thái sống (`liveData`), lịch sử chỉ tải khi có tương tác người dùng.
+
+### 27. Triệt Tiêu 100% D1 Reads Trên Live Polling Endpoints Bằng In-Memory State & Cache-Control (Subagent 03)
+- **Bối cảnh & Vấn đề**:
+  - Endpoint `/api/iot/latest` trước đây thực hiện 2 câu query D1 (`SELECT * FROM iot_devices`, `SELECT * FROM iot_readings WHERE device_id = ? ORDER BY created_at DESC LIMIT 1`). Do bảng `iot_readings` thiếu composite index và frontend poll liên tục, SQLite phải quét toàn bộ bảng (Table Scan) nạp vào temp B-Tree để ORDER BY, gây tiêu tốn tới 7.16 triệu rows read trong 24h và chạm ngưỡng D1 Free Tier quota (5M rows/day).
+- **Giải pháp & Thiết kế chuẩn**:
+  1. **Zero-D1 Live Endpoints**:
+     - Thay thế toàn bộ truy vấn SQL trong `/api/iot/live/:deviceId`, `/api/iot/latest`, `/api/iot/device-status` bằng hàm đọc in-memory `getLiveState(deviceId)` từ `server/iot-live-state.ts`.
+     - 0 D1 reads, 0 D1 writes, không gọi UPDATE last_seen từ GET, không ghi audit log vào D1.
+  2. **Format tinh gọn & Tương thích ngược**:
+     - Format tối giản trả về các chỉ số cốt lõi (`deviceId`, `online`, `pm1`, `pm25`, `pm10`, `temperature`, `humidity`, `rssi`, `lastSeen`, `sensorStatus`, `anomalyState`).
+     - Đính kèm compatibility object (`device`, `telemetry`) tính toán in-memory để các màn hình Dashboard/Settings cũ không bị vỡ giao diện.
+  3. **HTTP Cache Header Tối Ưu**:
+     - Thêm `Cache-Control: public, max-age=5, stale-while-revalidate=10` giúp Cloudflare Edge và Browser tự phục vụ cache trong 5s mà không chạm tới Worker CPU/D1.
+  4. **Singleton In-Memory State**:
+     - Cấu trúc module export đảm bảo thống nhất giữa TypeScript và Node.js ESM runtime, chia sẻ cùng một `Map<string, DeviceLiveState>` an toàn trong worker isolate.
+
+### 26. Tối Ưu Hóa Polling Frontend Bằng In-Flight Request Deduplication & Page Visibility API
+- **Bối cảnh & Vấn đề**:
+  - Khi nhiều màn hình hoặc component (DashboardPage, IoTDevicePage, IoTSettingsPage) cùng polling dữ liệu telemetry ở chu kỳ 3s, việc này gây lãng phí băng thông mạng và nguy cơ cạn kiệt Cloudflare D1 row read quota khi người dùng mở nhiều tab hoặc để tab chạy ngầm.
+- **Giải pháp & Kiến trúc triển khai**:
+  1. **Singleton IoTLiveService với In-Flight Request Deduplication**:
+     - Tạo `apps/web/src/services/iotLiveService.ts` quản lý state tập trung cho thiết bị (mặc định `DG-IOT-001`).
+     - Cơ chế gộp yêu cầu: Nếu nhiều component đồng thời gọi `fetchLiveState` trong cùng thời điểm, service chỉ phát 1 HTTP request duy nhất qua `fetch('/api/iot/live?deviceId=...')` và chia sẻ Promise cho tất cả các bên gọi.
+     - Caching 15s (`LIVE_REFRESH_MS = 15000`): Dữ liệu được lưu trong cache và trả về ngay nếu chưa quá 15 giây, ngăn chặn triệt để spam request.
+  2. **Custom Hook `useIoTLiveState` & Page Visibility API**:
+     - Tích hợp `document.visibilityState === 'visible'` và `window.focus`.
+     - Khi tab bị ẩn (`document.hidden`): NGỪNG POLLING HOÀN TOÀN (`clearInterval`).
+     - Khi người dùng focus trở lại tab (`visibilitychange` / `focus`): Lập tức gọi fetch dữ liệu mới nhất 1 lần và tái lập chu kỳ 15 giây.
+     - Đồng bộ Pub/Sub: Khi dữ liệu mới về, thông báo ngay cho toàn bộ các component đang đăng ký.
+
+### 25. Kiểm Định Chất Lượng, Trùng Lặp & Vòng Đời Dữ Liệu (Data Lifecycle & Duplication Audit) Trên Cloudflare D1 Production Rebuild
+- **Bối cảnh & Giới hạn Hạ tầng**:
+  - Khi vận hành trên Cloudflare D1 Free Tier, trần đọc hàng ngày (`rows_read_24h`) là 5,000,000 dòng. Khi vượt trần (7.16M rows do kịch bản test/polling tải nặng), Cloudflare API trả về mã lỗi `7500` và tạm thời chặn các câu lệnh SELECT đọc dòng cho đến 00:00 UTC. Lệnh ghi (write) và SELECT đọc 0 dòng vẫn thông suốt.
+  - Trong quá trình audit, cần đối chiếu với CSDL SQLite SSOT chuẩn (`data/dustguard-community.db`, `dustguard-operations/data/dustguard-operations.db` và `app/prisma/dev.db`) — nơi lưu giữ 100% dữ liệu gốc trước khi đồng bộ.
+- **Kinh nghiệm & Bài học phát hiện**:
+  1. **Dữ liệu trùng lặp (Natural Key Duplication)**:
+     - 100% người dùng, phiên làm việc, thiết bị IoT và hồ sơ đều đạt tính toàn vẹn (0 trùng lặp) nhờ các composite index và ràng buộc UNIQUE.
+     - Tuy nhiên, phát hiện **4 cụm dữ liệu thử nghiệm liên hoàn** trong `reports` tại cùng tọa độ `(10.732, 106.709)` và cùng phút (19 reports) do script test e2e submit dồn dập. Cần gắn cơ chế throttle/rate-limit cấp ứng dụng (ví dụ 1 report / 3 phút từ cùng tọa độ).
+  2. **Bản ghi mồ côi (Orphan Records) từ kịch bản test**:
+     - Phát hiện **11 bản ghi mồ côi** trong `case_feedback` do test suite e2e tạo feedback với dummy `case_id` (`case-fb-...`) mà không tạo case cha.
+     - Phát hiện **987 bản ghi mồ côi** trong `youth_certificates` (dev) trỏ đến các mock user (`usr_test_student_01`...).
+     - Bài học: Mọi bài test e2e phải dọn dẹp sạch dữ liệu thử nghiệm (teardown) hoặc chạy trên database test cô lập (`data/test-e2e/*.db`), không tạo dữ liệu rác vào SSOT chính.
+  3. **Chiến lược phân tầng vòng đời dữ liệu 3 nhóm (3-Tier Lifecycle)**:
+     - *MUST KEEP (40 bảng, 627 rows)*: Hồ sơ sự vụ, bằng chứng số SHA-256, văn bản pháp luật, tài khoản người dùng và cán bộ.
+     - *CAN ARCHIVE (12 bảng, 312 rows)*: Lịch sử cập nhật tiến độ, dòng thời gian sự vụ chuyên trách, audit logs > 90 ngày, kết quả gợi ý xử phạt. Xuất định kỳ sang Cloudflare R2 (Parquet / JSONL nén).
+     - *CAN DELETE (7 bảng, 130 rows)*: 100% phiên đăng nhập hết hạn (`ops_sessions`), các khóa `idempotency_keys` > 24h, thông báo cũ > 90 ngày, telemetry đo thô > 30 ngày (sau khi đã tính trung bình giờ).
+  4. **Giải pháp chặn quá tải D1 Row Read**:
+     - Tuyệt đối cấm polling trực tiếp vào D1 từ trình duyệt ở tần số cao (< 5s).
+     - Áp dụng caching tầng Worker (Cache API, KV hoặc Durable Objects) để phục vụ các yêu cầu đọc bản tin mới nhất mà không chạm vào D1 row reads.
+
+### 24. Loại Bỏ Hoàn Toàn Hardcode Demo Location, Chuyển Sang Realtime Geolocation & SSOT D1 Hardware Node
+- **Bối cảnh & Vấn đề**:
+  - Dữ liệu ban đầu sử dụng tọa độ demo Hà Nội (`62 Nguyễn Chí Thanh`) dẫn đến việc người dùng thực tế tại TP.HCM (Lê Văn Việt, TP. Thủ Đức) thấy khoảng cách bất thường (~1136 km) và nhầm lẫn giữa vị trí của bản thân với vị trí trạm đo.
+- **Giải pháp & Nguyên tắc triển khai**:
+  1. **Tách biệt rõ ràng 2 nguồn dữ liệu**:
+     - *User Location*: Đọc hoàn toàn từ `navigator.geolocation` (GPS thời gian thực), reverse geocode ra địa chỉ quận/phường thực tế của người dùng.
+     - *Node Location*: Đọc trực tiếp từ CSDL Cloudflare D1 (`iot_devices`), phản ánh đúng vị trí thực tế của thiết bị vật lý đang vận hành ngoài hiện trường.
+  2. **Dọn sạch fallback hardcode**:
+     - Không để chuỗi địa chỉ cố định ("62 Nguyễn Chí Thanh") trong code UI hoặc placeholder. Mọi fallback đều sử dụng mô tả tổng quát hoặc đồng bộ tọa độ trạm đo thật.
+  3. **Cập nhật D1 Remote**:
+     - Đồng bộ cả SQLite local và Cloudflare D1 remote (`npx wrangler d1 execute ... --remote`) để đảm bảo tính nhất quán (SSOT).
+
+### 23. Quản Lý Asset Nguyên Mẫu Thiết Kế Vỏ Hộp Công Nghiệp (Enclosure Design SSoT) & Tích Hợp Đa Kênh (Submission / Web / Firmware Docs)
+- **Bối cảnh & Giá trị nghiệp vụ**:
+  - Khi phát triển một sản phẩm IoT hoàn chỉnh từ phòng lab ra công trường, việc thể hiện rõ ràng giải pháp cơ khí bảo vệ thiết bị ngoài trời (Outdoor Mechanical Enclosure) là điểm cộng rất lớn trong đồ án Samsung Innovation Campus.
+  - Hình ảnh `prototype.png` phản ánh chân thực giải pháp thực tiễn:
+    1. Mái che ngăn nước mưa tạt trực tiếp vào khe khí.
+    2. Khe đón gió hướng xuống bảo vệ quạt hút laser APM2000 khỏi đọng nước.
+    3. Khe thoát gió đối lưu tự nhiên dưới đáy.
+    4. Nắp đậy có gioăng cao su (ron chống nước) siết bằng 4 vít thép.
+    5. Cụm ngàm lắp đặt kép: lỗ treo tường dạng khóa và khe luồn dây đai / dây rút ôm cột tròn.
+    6. Đèn LED trạng thái 3 màu (PWR, Wi-Fi, DATA) và ốc siết cáp chống nước PG gland.
+- **Quy chuẩn triển khai**:
+  - Lưu trữ file gốc chất lượng cao vào thư mục nộp bài [`11/prototype.png`](file:///d:/07-Competitions-Hackathons\unicef-dustguard\11\prototype.png).
+  - Đưa vào thư mục tài nguyên web công khai [`app/public/images/prototype.png`](file:///d:/07-Competitions-Hackathons\unicef-dustguard\app\public\images\prototype.png) để các trang trình diễn (`/sic`, `/iot`) hiển thị trực quan mà không bị vỡ đường dẫn ảnh.
+  - Sử dụng thẻ giới thiệu sáng màu (Light mode, không glassmorphism) với các badge điểm nhấn trực quan giúp Hội đồng giám khảo nắm bắt trọn vẹn giá trị kỹ thuật phần cứng.
+
+### 22. Phòng Chống Lỗi C++ Linter / Static Analysis Trên ESP32 Firmware (`ui_manager.cpp`) & Chuẩn Hóa Lệnh `npm run lint` Đơn Giản
+- **Bối cảnh & Vấn đề**:
+  - Khi mở file mã nguồn C++ nhúng trong IDE (`iot/dustguard-node/firmware/src/ui/ui_manager.cpp`), các trình linter (như Clangd, Cppcheck, Visual Studio IntelliSense) phát hiện hàng loạt cảnh báo chất lượng mã:
+    1. Ép kiểu số nguyên tùy tiện vào enum: `(ScreenId)255` khi enum không định nghĩa giá trị 255.
+    2. Gọi hàm không an toàn `sprintf` tiềm ẩn nguy cơ tràn đệm bộ nhớ (buffer overflow), thay vì `snprintf`.
+    3. Định dạng chuỗi `%us` gây hiểu nhầm và ép kiểu thiếu chính xác với biến 32-bit `uint32_t` (`unsigned long` vs `unsigned int`).
+    4. Cảnh báo tham số không dùng `[-Wunused-parameter]` trong hàm `drawButton(..., bool active)`.
+    5. Khai báo hàm trong header nhưng quên triển khai trong file `.cpp` (`drawStatusBadge`).
+  - Ngoài ra, người dùng gõ lệnh `npm run lint` trên terminal và bị báo `Missing script: "lint"`.
+- **Kinh nghiệm & Quy chuẩn áp dụng**:
+  1. **Enum An Toàn (Sentinel Value)**:
+     - Thêm `SCREEN_NONE = 255` vào định nghĩa enum `ScreenId : uint8_t` trong `types.h`, khởi tạo `_lastScreen(SCREEN_NONE)`.
+  2. **An Toàn Bộ Đệm & Chuẩn C++ (Safe Formatting)**:
+     - Luôn dùng `snprintf(buf, sizeof(buf), ...)` thay vì `sprintf`.
+     - Với biến thời gian `uint32_t`, luôn ép kiểu tường minh `(unsigned long)` và dùng `%lu s` để đảm bảo tương thích 100% giữa các toolchain (Xtensa, GCC x86/ARM).
+  3. **Khử Tham Số Dư Thừa**:
+     - Tham số `bool active` trong `drawButton` được dùng để vẽ viền đổi màu `COLOR_TEAL_PRIMARY`, vừa giải quyết cảnh báo linter vừa tăng độ trực quan cho nút bấm được chọn.
+  4. **Nhất Quán Header & Implementation**:
+     - Đảm bảo mọi method khai báo trong class header đều được hiện thực đầy đủ (`drawStatusBadge`).
+  5. **Tích Hợp `npm run lint` Trực Tiếp**:
+     - Cấu hình `"lint": "npm --prefix app run verify:quick"` vào root `package.json` và `"lint": "node scripts/verify-quick.js"` vào `app/package.json`.
+     - Đảm bảo thao tác của người dùng luôn chạy mượt mà ngay từ CLI mà không bị lỗi thiếu script.
+
+### 21. Thiết Kế & Triển Khai Module IoT Node APM2000 Màn Hình Cảm Ứng 3.5" TFT, Xác Thực Chữ Ký HMAC-SHA256, Bộ Đệm Ngoại Tuyến (Offline Queue) & Chuẩn Hóa Hồ Sơ Nộp Bài Samsung Innovation Campus 2026 (STT: 11)
+- **Bối cảnh & Yêu cầu Đồ án Final Project**:
+  - Dự án yêu cầu nâng cấp màn hình OLED nhỏ hẹp lên màn hình màu cảm ứng 3.5" TFT (480x320) có thể đọc ở khoảng cách một cánh tay (arm's length).
+  - Tách biệt module IoT (`iot/dustguard-node/`) độc lập với web core, không làm thay đổi các tuyến nghiệp vụ hiện hành.
+  - Xây dựng thư mục nộp bài chuẩn quy cách môn học của Thầy TS. Nguyễn Văn Thái (Khoa Điện-Điện tử, HCM-UTE) cho sinh viên Phạm Phú Nguyễn Hưng (MSSV: 26730023 - UIT CNTT) nhóm 11.
+- **Kinh nghiệm kiến trúc & Giải pháp giải quyết**:
+  1. **Mô hình Shared DeviceState chống nghẽn (Non-blocking Decoupling)**:
+     - Tuyệt đối không cho từng màn hình UI truy cập trực tiếp vào UART cảm biến hoặc socket Wi-Fi. Mọi giao tiếp diễn ra qua `DeviceState`.
+     - Phân bổ chu kỳ chạy song song: APM2000 đọc mỗi 2000ms, UI refresh mỗi 500ms, Cloud upload mỗi 15000ms, Touch polling mỗi 50ms.
+  2. **Bộ đệm ngoại tuyến (Offline Resilience Queue)**:
+     - Khi Wi-Fi mất kết nối, node tự động lưu mẫu đo vào mảng vòng SRAM `_queue` (tối đa 30 mẫu).
+     - Khi có mạng trở lại, client tự động đẩy dữ liệu cũ nhất lên trước (FIFO), giúp chuỗi thời gian trên Web Dashboard liên tục không đứt gãy.
+  3. **Bảo mật thiết bị & Chống giả mạo (HMAC-SHA256)**:
+     - Mỗi node được cấp định danh và secret riêng; payload gửi lên kèm chữ ký SHA256 tạo từ mbedtls (ESP32) và xác thực bằng `crypto.timingSafeEqual` (Worker).
+  4. **Tự động hóa đóng gói nộp bài sạch (Clean Code Packaging)**:
+     - File zip nộp bài (`11-Code.zip`) phải lọc bỏ triệt để `node_modules`, `.git`, `.pio`, `dist` và SQLite DB lớn (>1MB) để giữ dung lượng nhẹ (~3.6MB) nhưng chứa đủ 100% mã nguồn cần thiết.
+  5. **Màn hình chào chuẩn học thuật (`/sic`)**:
+     - Thể hiện đầy đủ Logo UTE & UIT, Khoa Điện-Điện tử, Ngành CNTT, Tên đề tài, GVHD TS. Nguyễn Văn Thái, SVTH Phạm Phú Nguyễn Hưng (26730023) và nút CTA chuyển tiếp vào hệ thống chính `/iot`.
+
 ### 20. Khắc Phục Lệch Mật Khẩu Hash Demo CSDL (DustGuard@2026 vs DustGuard123!) & Khả Năng Khôi Phục Xác Thực Đa Cổng (Community & Operations)
 - **Vấn đề thực tế phát sinh**:
   1. *Lỗi Đăng nhập Demo "Email hoặc mật khẩu chưa đúng"*: Khi người dùng bấm vào thẻ tài khoản trải nghiệm (ví dụ `citizen@dustguard.local`), giao diện tự điền mật khẩu `DustGuard@2026`. Tuy nhiên trong CSDL local `data/dustguard-community.db`, mật khẩu được seed là `DustGuard123!`. Việc so khớp bcrypt trả về `false`, sinh ra lỗi 401 trên giao diện.
@@ -389,7 +527,7 @@
   - **Phân Tán Không Có Điểm Tựa Duy Nhất (Missing SSOT Location)**: Mỗi component tự gán tọa độ tĩnh `10.7769, 106.7009`, khi ghim bản đồ hoặc reverse-geocode thì nảy sinh lỗi lệch tọa độ.
 - **Giải pháp chuẩn hóa**:
   1. **Thiết Lập Location SSOT Module (`@dustguard/shared/constants/location.ts`)**:
-     - Định nghĩa `DEMO_LOCATION` duy nhất tại `62 Nguyễn Chí Thanh, Phường Láng Thượng, Hà Nội` (`21.0205, 105.8078`).
+     - Định nghĩa `DEMO_LOCATION` duy nhất tại `484 Lê Văn Việt, Hồ Chí Minh` (`21.0205, 105.8078`).
      - Tích hợp hàm toán học Haversine `calculateDistanceMeters(origin, destination)` và `formatDistance()` để tính động khoảng cách thực tế thay vì hardcode.
   2. **Chuẩn Hóa Mô Hình Hành Chính 2 Cấp (Two-Level Administrative Hierarchy)**:
      - Trên UI/Forms/Filters: Chỉ hiển thị `Tỉnh/Thành phố` (Cấp 1) và `Phường/Xã` (Cấp 2). Bỏ hoàn toàn dropdown và nhãn "Quận/Huyện".

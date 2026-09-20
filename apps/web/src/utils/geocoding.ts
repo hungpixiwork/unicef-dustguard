@@ -1,5 +1,4 @@
 // Utility Geocoding & Reverse Geocoding chuẩn OSM/Photon cho DustGuard VN (Mô hình 2 cấp: Tỉnh/TP -> Phường/Xã)
-import { DEMO_LOCATION } from '@dustguard/shared';
 
 export interface GeocodeResult {
   displayName: string;
@@ -44,16 +43,17 @@ export const HO_CHI_MINH_DISTRICTS = HANOI_ADMINISTRATIVE_AREAS;
  */
 export async function searchAddressGeocoding(
   query: string,
-  proximityLat: number = DEMO_LOCATION.latitude,
-  proximityLng: number = DEMO_LOCATION.longitude
+  proximityLat?: number,
+  proximityLng?: number
 ): Promise<GeocodeResult[]> {
   const cleanQuery = query.trim();
   if (!cleanQuery || cleanQuery.length < 2) return [];
 
   // Thử tìm kiếm qua Photon API
   try {
-    const encoded = encodeURIComponent(`${cleanQuery}, Hà Nội`);
-    const url = `https://photon.komoot.io/api/?q=${encoded}&lat=${proximityLat}&lon=${proximityLng}&limit=5`;
+    const encoded = encodeURIComponent(cleanQuery);
+    const coordsQuery = (proximityLat !== undefined && proximityLng !== undefined) ? `&lat=${proximityLat}&lon=${proximityLng}` : '';
+    const url = `https://photon.komoot.io/api/?q=${encoded}${coordsQuery}&limit=5`;
     const res = await fetch(url);
     if (res.ok) {
       const data = await res.json();

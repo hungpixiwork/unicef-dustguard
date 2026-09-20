@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { apiRequest } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.js';
 import { CaseCard } from '../components/common/CaseCard.js';
 import { LoadingSkeleton } from '../components/common/LoadingSkeleton.js';
-import { DEMO_LOCATION, calculateDistanceMeters, formatDistance } from '@dustguard/shared';
+import { useGeolocation } from '../hooks/useGeolocation.js';
+import { useIoTLiveState } from '../hooks/useIoTLiveState.js';
+import { reverseGeocode } from '../services/geocoding.js';
+import { calculateDistance, formatDistance } from '../utils/geo.js';
 import {
   Camera,
   Search,
@@ -22,7 +25,8 @@ import {
   CheckCircle,
   Zap,
   PlusCircle,
-  RefreshCw
+  RefreshCw,
+  Navigation
 } from 'lucide-react';
 
 interface DashboardResponse {
@@ -55,33 +59,77 @@ export const DashboardPage: React.FC = () => {
     source?: string;
   } | null>(null);
 
-  // Tọa độ vị trí người dùng để tính khoảng cách trắc địa thực tế
-  const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>({
-    latitude: DEMO_LOCATION.latitude,
-    longitude: DEMO_LOCATION.longitude
-  });
+  // 1. Hook Geolocation Realtime (watchPosition, accuracy, permission states)
+  const {
+    location: userLocation,
+    loading: geoLoading,
+    permission: geoPermission,
+    requestPermission: requestGeoPermission
+  } = useGeolocation();
 
+  // State hiển thị địa chỉ người dùng sau khi reverse geocode
+  const [userAddress, setUserAddress] = useState<string>('');
+  const [addressLoading, setAddressLoading] = useState<boolean>(false);
+
+  // Reverse Geocoding địa chỉ người dùng theo tọa độ GPS thật (có debounce & in-memory cache)
   useEffect(() => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setUserCoords({
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude
-          });
-        },
-        () => {
-          // Fallback vị trí tham chiếu 62 Nguyễn Chí Thanh
-          setUserCoords({
-            latitude: DEMO_LOCATION.latitude,
-            longitude: DEMO_LOCATION.longitude
-          });
-        },
-        { timeout: 4000, maximumAge: 60000 }
-      );
-    }
-  }, []);
+    if (!userLocation) return;
+    let active = true;
+    setAddressLoading(true);
 
+    const timer = setTimeout(async () => {
+      try {
+        const geoResult = await reverseGeocode(userLocation.latitude, userLocation.longitude);
+        if (active) {
+          if (geoResult && geoResult.shortAddress) {
+            setUserAddress(geoResult.shortAddress);
+          } else {
+            // Không giả địa chỉ chính xác, hiển thị tọa độ thực
+            setUserAddress(`Tọa độ: ${userLocation.latitude.toFixed(4)}, ${userLocation.longitude.toFixed(4)}`);
+          }
+        }
+      } catch (err) {
+        if (active) {
+          setUserAddress(`Tọa độ: ${userLocation.latitude.toFixed(4)}, ${userLocation.longitude.toFixed(4)}`);
+        }
+      } finally {
+        if (active) setAddressLoading(false);
+      }
+    }, 400);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [userLocation?.latitude, userLocation?.longitude]);
+
+  // Vị trí node cảm biến thật (Lấy từ API device hoặc fallback tọa độ thực của node)
+  const nodeLocation = useMemo(() => {
+    return {
+      latitude: iotData?.device?.latitude ?? 10.8450,
+      longitude: iotData?.device?.longitude ?? 106.7790,
+      address: iotData?.device?.locationText || 'Đường Lê Văn Việt, Phường Tăng Nhơn Phú, TP. Thủ Đức, TP.HCM',
+      name: iotData?.device?.name || 'Trạm quan trắc Lê Văn Việt'
+    };
+  }, [iotData?.device]);
+
+  // Helper tính khoảng cách trắc địa từ USER GPS thật tới NODE
+  const getDistanceText = () => {
+    if (!userLocation) {
+      if (geoPermission === 'denied') return 'Chưa có vị trí';
+      if (geoLoading) return 'Đang tính...';
+      return 'Chưa xác định';
+    }
+    const meters = calculateDistance(
+      userLocation.latitude,
+      userLocation.longitude,
+      nodeLocation.latitude,
+      nodeLocation.longitude
+    );
+    return formatDistance(meters);
+  };
+
+  // Fetch dữ liệu Dashboard cộng đồng
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -105,67 +153,25 @@ export const DashboardPage: React.FC = () => {
     };
     window.addEventListener('auth:role_changed', handleRoleChanged);
 
-    // Polling số liệu cảm biến thật mỗi 3 giây (Zero Reload)
-    const fetchIoT = async () => {
-      try {
-        const res = await fetch('/api/iot/latest?deviceId=DG-IOT-001');
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success && json.data && active) {
-            setIotData({
-              device: json.data.device,
-              telemetry: json.data.telemetry,
-              isOnline: Boolean(json.data.device?.isOnline),
-              source: json.data.source
-            });
-          }
-        }
-      } catch (err) {
-        // Giữ trạng thái gần nhất
-      }
-    };
-
-    fetchIoT();
-    const iotInterval = setInterval(fetchIoT, 3000);
-
     return () => {
       active = false;
       window.removeEventListener('auth:role_changed', handleRoleChanged);
-      clearInterval(iotInterval);
     };
   }, [user?.id]);
 
-  if (loading) {
-    return <LoadingSkeleton rows={4} />;
-  }
+  // Hook SSOT: Live Telemetry Polling 15s có Page Visibility API deduplication (Zero-D1 Reads)
+  const { data: iotLiveData } = useIoTLiveState('DG-IOT-001');
 
-  const stats = data?.stats || {
-    totalReports: 0,
-    newReports: 0,
-    verifyingCases: 0,
-    inProgressCases: 0,
-    resolvedCases: 0,
-    communityMembers: 0,
-    activeCases: 0,
-    updatedToday: 0
-  };
-
-  const myReports = data?.myReports || [];
-  const nearbyCases = data?.nearbyCases || [];
-  const recentActivity = data?.recentActivity || [];
-
-  // Helper tính khoảng cách trắc địa thực tế tới trạm đo DG-IOT-001
-  const getDistanceText = () => {
-    const targetLat = iotData?.device?.latitude ?? DEMO_LOCATION.latitude;
-    const targetLng = iotData?.device?.longitude ?? DEMO_LOCATION.longitude;
-    if (!userCoords) return 'Cách bạn ~120m';
-    const meters = calculateDistanceMeters(
-      { latitude: userCoords.latitude, longitude: userCoords.longitude },
-      { latitude: targetLat, longitude: targetLng }
-    );
-    if (meters < 30) return 'Cách bạn ~25m (Tại vị trí)';
-    return `Cách bạn ${formatDistance(meters)}`;
-  };
+  useEffect(() => {
+    if (iotLiveData?.device) {
+      setIotData({
+        device: iotLiveData.device,
+        telemetry: iotLiveData.telemetry,
+        isOnline: Boolean(iotLiveData.isOnline),
+        source: iotLiveData.source || 'Dữ liệu trực tiếp (Zero-D1 Live State)'
+      });
+    }
+  }, [iotLiveData]);
 
   // Helper chuyển trạng thái sang bước tiến trình tiếng Việt đời thường
   const getProgressStage = (status: string) => {
@@ -181,6 +187,21 @@ export const DashboardPage: React.FC = () => {
     }
     return { step: 1, label: 'Đã tiếp nhận phản ánh' };
   };
+
+  const stats = data?.stats || {
+    totalReports: 0,
+    newReports: 0,
+    verifyingCases: 0,
+    inProgressCases: 0,
+    resolvedCases: 0,
+    communityMembers: 0,
+    activeCases: 0,
+    updatedToday: 0
+  };
+
+  const myReports = data?.myReports || [];
+  const nearbyCases = data?.nearbyCases || [];
+  const recentActivity = data?.recentActivity || [];
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-200">
@@ -205,9 +226,53 @@ export const DashboardPage: React.FC = () => {
               Không khí quanh bạn <span className="text-primary">hôm nay thế nào?</span>
             </h1>
 
-            <div className="inline-flex flex-wrap sm:flex-nowrap items-center gap-1.5 text-xs font-bold text-slate-800 bg-stone-100 px-3 py-1.5 rounded-lg border border-stone-200 max-w-full break-words">
-              <MapPin className="w-3.5 h-3.5 text-[#B51F24] shrink-0" />
-              <span>62 Nguyễn Chí Thanh, Hà Nội · <strong className="text-teal-800">{getDistanceText()}</strong> · Tín hiệu môi trường trực tiếp</span>
+            {/* Vị trí realtime của NGƯỜI DÙNG (Không nhầm lẫn với vị trí của Node) */}
+            <div className="inline-flex flex-wrap items-center gap-2 text-xs font-bold text-slate-800 bg-stone-100 px-3.5 py-2 rounded-xl border border-stone-200 max-w-full">
+              <MapPin className="w-4 h-4 text-primary shrink-0" />
+              {geoLoading || addressLoading ? (
+                <span className="flex items-center gap-1.5 text-slate-600">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-teal-700" />
+                  Đang xác định vị trí…
+                </span>
+              ) : userLocation ? (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-slate-900 font-extrabold">
+                    {userAddress || 'Vị trí trực tiếp của bạn'}
+                  </span>
+                  <span className="text-slate-400 font-normal">·</span>
+                  <span className="text-teal-800 font-extrabold bg-teal-50 px-2 py-0.5 rounded border border-teal-200 text-[11px] inline-flex items-center gap-1">
+                    <Navigation className="w-3 h-3 text-teal-700" />
+                    {getDistanceText()} đến trạm đo
+                  </span>
+                  {userLocation.accuracy > 1000 && (
+                    <span className="text-slate-500 font-normal text-[11px]">
+                      (Vị trí gần đúng)
+                    </span>
+                  )}
+                </div>
+              ) : geoPermission === 'denied' ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-600">Chưa được cấp quyền vị trí</span>
+                  <button
+                    type="button"
+                    onClick={requestGeoPermission}
+                    className="px-2.5 py-1 text-[11px] font-extrabold bg-white hover:bg-stone-50 text-primary border border-stone-300 rounded-lg shadow-2xs transition-colors"
+                  >
+                    Bật vị trí
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-600">Không thể xác định vị trí</span>
+                  <button
+                    type="button"
+                    onClick={requestGeoPermission}
+                    className="px-2.5 py-1 text-[11px] font-extrabold bg-white hover:bg-stone-50 text-slate-700 border border-stone-300 rounded-lg shadow-2xs transition-colors"
+                  >
+                    Thử lại
+                  </button>
+                </div>
+              )}
             </div>
 
             <p className="text-xs sm:text-sm text-content-sub font-medium leading-relaxed">
@@ -260,8 +325,8 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: DustGuard Node Live Sensor Card (SSOT Hardware) */}
-          <div className="w-full lg:w-auto shrink-0 p-4 sm:p-5 rounded-2xl bg-stone-50 border border-stone-200 space-y-3 lg:min-w-[320px]">
+          {/* Right: Trạm quan trắc thật DG-IOT-001 (VỊ TRÍ CỦA NODE) */}
+          <div className="w-full lg:w-80 bg-stone-50 rounded-2xl p-5 border border-stone-200 space-y-3">
             <div className="flex items-center justify-between text-xs pb-2 border-b border-stone-200">
               <span className="font-bold text-slate-700 flex items-center gap-1.5">
                 <Radio className="w-3.5 h-3.5 text-[#0D6F64]" />
@@ -291,14 +356,14 @@ export const DashboardPage: React.FC = () => {
                   <div className="flex items-center justify-between gap-1.5 font-bold text-slate-900">
                     <div className="flex items-center gap-1.5 truncate">
                       <MapPin className="w-3.5 h-3.5 text-[#B51F24] shrink-0" />
-                      <span className="truncate">{iotData.device?.name || 'DustGuard Demo Node'}</span>
+                      <span className="truncate">{nodeLocation.name}</span>
                     </div>
                     <span className="shrink-0 text-[11px] font-black text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
                       {getDistanceText()}
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-500 truncate pl-5">
-                    {iotData.device?.locationText || '62 Nguyễn Chí Thanh, Hà Nội'}
+                    {nodeLocation.address}
                   </div>
                   <div className="flex items-center gap-1.5 text-slate-600 font-medium text-[11px] pt-1 border-t border-stone-200">
                     <Clock className="w-3 h-3 shrink-0" />
@@ -464,7 +529,7 @@ export const DashboardPage: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
           <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold text-slate-900">{iotData?.device?.name || 'DustGuard Demo Node'}</span>
+              <span className="text-xs font-extrabold text-slate-900">{nodeLocation.name}</span>
               {iotData?.isOnline && iotData?.telemetry ? (
                 <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
                   {Math.round(iotData.telemetry.pm25)} µg/m³
@@ -476,7 +541,7 @@ export const DashboardPage: React.FC = () => {
               )}
             </div>
             <p className="text-[11px] text-slate-500 font-medium">
-              {iotData?.device?.locationText || '62 Nguyễn Chí Thanh, Hà Nội'} · Cảm biến thật
+              {nodeLocation.address} · Cảm biến thật
             </p>
           </div>
 

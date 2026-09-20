@@ -5,7 +5,7 @@ import { DEMO_LOCATION, HANOI_CENTER } from '@dustguard/shared';
 
 export function runSeed(): void {
   console.log('🌱 Đang nạp seed data chuẩn Hà Nội (Mô hình 2 cấp) cho DustGuard Community...');
-  
+
   // Đảm bảo bảng đã tồn tại
   runMigrations();
 
@@ -24,7 +24,7 @@ export function runSeed(): void {
       role: 'citizen',
       district: 'Láng Thượng', // Compat 2-level: mapping to level 2
       ward: 'Láng Thượng',
-      bio: 'Cư dân sinh sống tại 62 Nguyễn Chí Thanh, Phường Láng Thượng, Hà Nội.',
+      bio: 'Cư dân sinh sống tại 484 Lê Văn Việt, Hồ Chí Minh.',
       displayIdentity: 'name'
     },
     {
@@ -80,17 +80,17 @@ export function runSeed(): void {
       INSERT OR REPLACE INTO users (id, email, phone, password_hash, full_name, role, district, ward, bio, display_identity, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-      u.id, 
-      u.email, 
-      u.phone, 
-      passwordHash, 
-      u.fullName, 
-      u.role, 
-      u.district, 
-      u.ward || '', 
-      u.bio || 'Cư dân tích cực theo dõi môi trường Hà Nội.', 
-      u.displayIdentity || 'name', 
-      subDays(30), 
+      u.id,
+      u.email,
+      u.phone,
+      passwordHash,
+      u.fullName,
+      u.role,
+      u.district,
+      u.ward || '',
+      u.bio || 'Cư dân tích cực theo dõi môi trường Hà Nội.',
+      u.displayIdentity || 'name',
+      subDays(30),
       now
     ]);
   }
@@ -523,7 +523,7 @@ export function runSeed(): void {
     const targetCase = casesData[caseIndex];
     const isLinked = i % 4 !== 0; // Một số report chưa link để moderator verify
     const repStatus = isLinked ? 'verified' : (i % 2 === 0 ? 'submitted' : 'reviewing');
-    
+
     // Deterministic offset thay vì Math.random()
     const latOffset = (((i % 7) - 3) * 0.0003);
     const lngOffset = (((i % 5) - 2) * 0.0003);
@@ -565,14 +565,14 @@ export function runSeed(): void {
         id, report_id, uploaded_by, file_name, file_path, mime_type, file_size, sha256_hash, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-      `med_${r.id}`, 
-      r.id, 
-      r.reporterId, 
-      'hien_truong_bui.jpg', 
+      `med_${r.id}`,
+      r.id,
+      r.reporterId,
+      'hien_truong_bui.jpg',
       'https://images.unsplash.com/photo-1541888946425-d0fbb186156f?w=800&auto=format&fit=crop&q=60',
-      'image/jpeg', 
-      1024 * 350, 
-      dummyHash, 
+      'image/jpeg',
+      1024 * 350,
+      dummyHash,
       r.observedAt
     ]);
 
@@ -661,7 +661,7 @@ export function runSeed(): void {
     const obsType = obsTypes[i % obsTypes.length];
     const comment = obsComments[i % obsComments.length];
     const obsId = `obs_${100 + i}`;
-    
+
     sqliteClient.run(`
       INSERT OR REPLACE INTO observations (id, case_id, user_id, observation_type, comment, observed_at, latitude, longitude, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)

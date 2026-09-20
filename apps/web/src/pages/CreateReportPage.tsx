@@ -600,7 +600,7 @@ export const CreateReportPage: React.FC = () => {
                       handleSearchAddress();
                     }
                   }}
-                  placeholder="Tìm kiếm địa chỉ, tên đường hoặc địa danh (VD: 62 Nguyễn Chí Thanh)..."
+                  placeholder="Tìm kiếm địa chỉ, tên đường hoặc địa danh (VD: Lê Văn Việt, Nguyễn Huệ)..."
                   className="w-full pl-10 pr-20 py-2.5 rounded-xl border border-border-subtle focus:border-primary focus:outline-none text-sm bg-white shadow-2xs"
                 />
                 <button
@@ -693,7 +693,7 @@ export const CreateReportPage: React.FC = () => {
                 required
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="VD: Số 62 Nguyễn Chí Thanh, đối diện cổng trường..."
+                placeholder="VD: Số 123 đường Lê Văn Việt, đối diện cổng trường..."
                 className="w-full px-4 py-2.5 rounded-xl border border-border-subtle focus:border-primary focus:outline-none text-sm bg-white"
               />
             </div>

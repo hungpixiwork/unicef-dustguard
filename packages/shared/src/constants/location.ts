@@ -1,7 +1,7 @@
 /**
  * GEOGRAPHIC SOURCE OF TRUTH — DUSTGUARD VN
  * Chuẩn mô hình hành chính 2 cấp (Tỉnh/Thành phố trực thuộc Trung ương -> Phường/Xã).
- * Điểm xuất phát Demo (SSOT): 62 Nguyễn Chí Thanh, Phường Láng Thượng, Hà Nội.
+ * Điểm xuất phát Demo (SSOT): 484 Lê Văn Việt, Hồ Chí Minh.
  */
 
 export interface AdministrativeArea {
@@ -42,7 +42,7 @@ export const DEMO_LOCATION = {
 export const HANOI_CENTER = {
   lat: 21.0205,
   lng: 105.8078,
-  address: '62 Nguyễn Chí Thanh, Phường Láng Thượng, Hà Nội'
+  address: '484 Lê Văn Việt, Hồ Chí Minh'
 };
 
 /**
@@ -65,9 +65,9 @@ export function calculateDistanceMeters(
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(lat1 * (Math.PI / 180)) *
-      Math.cos(lat2 * (Math.PI / 180)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return Math.round(R * c);
 }

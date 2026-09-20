@@ -407,7 +407,7 @@ export function runMigrations(): void {
       sensor_model, wifi_ssid, wifi_rssi, firmware_version, created_at, updated_at
     ) VALUES (
       'dev-apm2000-001', 'DG-IOT-001', 'DustGuard Demo Node',
-      '62 Nguyễn Chí Thanh, Phường Láng Thượng, Hà Nội', 21.0205, 105.8078, 'OFFLINE',
+      '484 Lê Văn Việt, Hồ Chí Minh', 21.0205, 105.8078, 'OFFLINE',
       'ASAIR APM2000', 'Harry Maguire', -54, '1.2.0-esp32', datetime('now'), datetime('now')
     );
   `);

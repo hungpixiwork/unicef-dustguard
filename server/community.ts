@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { sign, verify } from 'hono/jwt';
 import { query, get, run, calculateDistanceMeters } from './d1.js';
 import { putObject, getMimeType } from './r2.js';
+import { getLiveState } from './iot-live-state.js';
 
 const JWT_SECRET = 'dustguard-production-jwt-secret-2026';
 
@@ -1163,37 +1164,39 @@ export function createCommunityRouter() {
       time: r.created_at
     }));
 
-    // Truy vấn thông tin trạm cảm biến thực tế (SSOT Hardware)
+    // Truy vấn thông tin trạm cảm biến thực tế (Lấy từ In-Memory LiveState, TUYỆT ĐỐI KHÔNG SELECT D1 iot_readings)
     let iotNode: any = null;
     try {
-      const dev = await get(c.env.DB, "SELECT * FROM iot_devices WHERE device_code = 'DG-IOT-001' OR id = 'dev-apm2000-001' LIMIT 1");
-      if (dev) {
-        const latestReading = await get(c.env.DB, "SELECT * FROM iot_readings WHERE device_id = ? ORDER BY created_at DESC LIMIT 1", [dev.id]);
-        const now = Date.now();
-        const lastSeenMs = dev.last_reading_at ? new Date(dev.last_reading_at).getTime() : 0;
-        const diffSec = lastSeenMs > 0 ? Math.floor((now - lastSeenMs) / 1000) : 999999;
-        const isOnline = diffSec <= 30;
+      const live = getLiveState('DG-IOT-001') || getLiveState('dev-apm2000-001');
+      if (live) {
+        // Đọc cấu hình vị trí từ iot_devices (1 row có index, KHÔNG chạm vào bảng iot_readings)
+        const dev = await get(c.env.DB, "SELECT * FROM iot_devices WHERE device_code = 'DG-IOT-001' OR id = 'dev-apm2000-001' LIMIT 1");
+        const lastSeenMs = live.lastSeen || (dev?.last_reading_at ? new Date(dev.last_reading_at).getTime() : 0);
+        const diffSec = lastSeenMs > 0 ? Math.floor((Date.now() - lastSeenMs) / 1000) : 999999;
+        const isOnline = live.online ?? (diffSec <= 30);
 
         iotNode = {
-          deviceCode: dev.device_code,
-          name: dev.name,
-          locationText: dev.location_text,
-          sensorModel: dev.sensor_model || 'ASAIR APM2000',
-          wifiSsid: dev.wifi_ssid,
-          wifiRssi: dev.wifi_rssi,
+          deviceCode: live.deviceId || dev?.device_code || 'DG-IOT-001',
+          name: dev?.name || `DustGuard Node (${live.deviceId})`,
+          locationText: dev?.location_text || 'Đường Lê Văn Việt, Phường Tăng Nhơn Phú, TP. Thủ Đức, TP.HCM',
+          latitude: dev?.latitude ?? 10.8450,
+          longitude: dev?.longitude ?? 106.7790,
+          sensorModel: dev?.sensor_model || 'ASAIR APM2000',
+          wifiSsid: dev?.wifi_ssid || 'Harry Maguire',
+          wifiRssi: live.rssi ?? dev?.wifi_rssi ?? -50,
           isOnline,
           status: isOnline ? 'ONLINE' : 'OFFLINE',
           secondsAgo: diffSec < 999999 ? diffSec : null,
-          lastSeenAt: dev.last_reading_at,
-          telemetry: latestReading ? {
-            pm25: latestReading.pm25,
-            pm10: latestReading.pm10,
-            pm1: latestReading.pm1,
-            temperature: latestReading.temperature,
-            humidity: latestReading.humidity,
-            wifiRssi: latestReading.wifi_rssi,
-            timestamp: latestReading.timestamp
-          } : null
+          lastSeenAt: new Date(lastSeenMs).toISOString(),
+          telemetry: {
+            pm25: live.pm25,
+            pm10: live.pm10,
+            pm1: live.pm1,
+            temperature: live.temperature,
+            humidity: live.humidity,
+            wifiRssi: live.rssi,
+            timestamp: new Date(lastSeenMs).toISOString()
+          }
         };
       }
     } catch (e) {

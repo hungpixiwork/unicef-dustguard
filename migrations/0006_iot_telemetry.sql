@@ -29,7 +29,7 @@ INSERT OR IGNORE INTO iot_devices (
   'dev-apm2000-001',
   'DG-IOT-001',
   'DustGuard Demo Node',
-  '62 Nguyễn Chí Thanh, Phường Láng Thượng, Hà Nội',
+  '484 Lê Văn Việt, Hồ Chí Minh',
   21.0205,
   105.8078,
   'OFFLINE',

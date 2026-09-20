@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useIoTLiveState } from '../hooks/useIoTLiveState.js';
 import {
   Cpu,
   Wifi,
@@ -64,32 +65,19 @@ export const IoTSettingsPage: React.FC = () => {
   const [resettingWifi, setResettingWifi] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
 
-  const fetchDeviceData = async () => {
-    try {
-      const res = await fetch('/api/iot/latest?deviceId=DG-IOT-001');
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && json.data) {
-          setDevice(json.data.device);
-          setTelemetry(json.data.telemetry);
-          if (!newName && json.data.device?.name) {
-            setNewName(json.data.device.name);
-          }
-        }
-      }
-    } catch (err) {
-      console.warn('Lỗi tải dữ liệu IoT:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+  // Hook SSOT: Live Telemetry Polling 15s có Page Visibility API deduplication (Zero-D1 Reads)
+  const { data: liveData, loading: liveLoading, refreshing: liveRefreshing, refetch } = useIoTLiveState('DG-IOT-001');
 
   useEffect(() => {
-    fetchDeviceData();
-    const interval = setInterval(fetchDeviceData, 3000);
-    return () => clearInterval(interval);
-  }, []);
+    if (liveData?.device) {
+      setDevice(liveData.device as IoTDevice);
+      setTelemetry(liveData.telemetry as Telemetry);
+      if (!newName && liveData.device?.name) {
+        setNewName(liveData.device.name);
+      }
+      setLoading(false);
+    }
+  }, [liveData]);
 
   const handleUpdateName = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +91,7 @@ export const IoTSettingsPage: React.FC = () => {
       });
       if (res.ok) {
         setIsEditNameOpen(false);
-        fetchDeviceData();
+        refetch(true);
       }
     } catch (err) {
       console.error('Lỗi đổi tên thiết bị:', err);
@@ -128,7 +116,7 @@ export const IoTSettingsPage: React.FC = () => {
           setIsWifiModalOpen(false);
           setWifiSuccessMsg('');
           setWifiPassword('');
-          fetchDeviceData();
+          refetch(true);
         }, 2000);
       }
     } catch (err) {
@@ -149,7 +137,7 @@ export const IoTSettingsPage: React.FC = () => {
       if (res.ok) {
         setToastMsg('Đã khôi phục mạng mặc định: Harry Maguire (Mật khẩu: 12345678)');
         setTimeout(() => setToastMsg(''), 4000);
-        fetchDeviceData();
+        refetch(true);
       }
     } catch (err) {
       console.error('Lỗi đặt lại Wi-Fi:', err);
@@ -191,12 +179,13 @@ export const IoTSettingsPage: React.FC = () => {
         </div>
 
         <button
-          onClick={() => {
+          onClick={async () => {
             setRefreshing(true);
-            fetchDeviceData();
+            await refetch(true);
+            setRefreshing(false);
           }}
           disabled={refreshing}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-stone-50 border border-stone-200 px-3.5 py-2.5 min-h-[44px] rounded-xl shadow-2xs transition-all"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-stone-50 border border-stone-200 px-3.5 py-2.5 min-h-[44px] rounded-xl shadow-2xs transition-all cursor-pointer"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-teal-600' : ''}`} />
           <span>Làm mới</span>
@@ -226,7 +215,7 @@ export const IoTSettingsPage: React.FC = () => {
                 Device ID: {device?.deviceCode || 'DG-IOT-001'}
               </span>
               <span>·</span>
-              <span>{device?.locationText || '62 Nguyễn Chí Thanh, Hà Nội'}</span>
+              <span>{device?.locationText || 'Vị trí trạm quan trắc'}</span>
               <span>·</span>
               <span className="font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200 text-[11px]">
                 Cách bạn ~120m

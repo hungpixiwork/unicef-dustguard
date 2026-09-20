@@ -1,7 +1,7 @@
-import { 
-  ReportCategory, 
-  CaseStatus, 
-  SeverityObservation, 
+import {
+  ReportCategory,
+  CaseStatus,
+  SeverityObservation,
   ObservationType,
   TaskType,
   TaskStatus,
@@ -68,7 +68,7 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, { label: string; color: stri
 export const HANOI_CENTER = {
   lat: 21.0205,
   lng: 105.8078,
-  address: '62 Nguyễn Chí Thanh, Phường Láng Thượng, Hà Nội'
+  address: '484 Lê Văn Việt, Hồ Chí Minh'
 };
 
 // Legacy compatibility alias (tránh gãy build cũ nhưng trỏ về chuẩn mới nếu cần)
