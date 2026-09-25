@@ -3,6 +3,29 @@
 > **Kho lưu trữ kinh nghiệm, bài học kiến trúc và phòng chống lỗi kỹ thuật (Anti-Regression)**  
 > *Cập nhật sau mỗi chu trình phát triển tính năng mới thành công.*
 
+### 33. Xung Đột Header Case-Insensitive Trên Windows (wifi.h vs WiFi.h) & Chuẩn Hóa C/C++ IntelliSense
+- **Bối cảnh & Triệu chứng**:
+  - Khi mở file C++ (`main.cpp`, `api.h`, `wifi.cpp`) trong VS Code, xuất hiện hàng loạt cảnh báo gạch đỏ: `'Arduino.h' file not found`, `Unknown type name 'String'`, `Use of undeclared identifier 'WiFi'`.
+  - Khi chạy biên dịch PlatformIO (`pio run`), trình biên dịch báo lỗi: `'WiFi' was not declared in this scope`.
+- **Nguyên Nhân Gốc Rễ**:
+  1. **Xung đột tên file trên Windows**: Hệ thống tệp NTFS/FAT của Windows là *case-insensitive*. Khi mã nguồn dự án tạo file `include/wifi.h`, lệnh `#include <WiFi.h>` trong thư viện sẽ tìm thấy ngay file `include/wifi.h` trong thư mục hiện tại thay vì thư viện `<WiFi.h>` của framework Arduino. Do header guard chặn đệ quy, đối tượng `WiFi` không bao giờ được định nghĩa.
+  2. **Thiếu includePath trong `.vscode/c_cpp_properties.json`**: Cấu hình mặc định của IDE thiếu đường dẫn tới `framework-arduinoespressif32/cores/esp32`, `variants/esp32`, `.pio/libdeps/esp32_tft_touch/**` và thư viện chuẩn C++17 của `toolchain-xtensa-esp32`, khiến Language Server báo thiếu thư viện hàng loạt dù môi trường build đã cài đủ.
+- **Biện Pháp Khắc Phục**:
+  1. Đổi tên file module dự án từ `wifi.h` / `wifi.cpp` thành `wifi_service.h` / `wifi_service.cpp` để triệt tiêu 100% nguy cơ trùng lặp tên với thư viện hệ thống.
+  2. Bổ sung đầy đủ `#include <WiFi.h>` vào `api.h` khi module có tương tác trạng thái mạng.
+  3. Bổ sung các đường dẫn gốc của Arduino Core, Variant, Toolchain standard headers vào `includePath` của `.vscode/c_cpp_properties.json` (cả ở root và `firmware/.vscode`).
+  4. Xác thực thành công: `pio run -d iot/dustguard-node/firmware` hoàn tất trong 8 giây (Flash: 72.8%, RAM: 15.0%, SUCCESS).
+
+### 32. Tổ Chức Trung Tâm Tài Liệu & Demo Phục Vụ Thuyết Trình (IoT Master Hub)
+- **Bối cảnh & Vấn đề**:
+  - Khi một hệ sinh thái IoT trải dài qua 5 tầng kỹ thuật khác nhau (Firmware ESP32 C++, Sơ đồ mạch, Backend Cloudflare Worker, CSDL D1, Web React Dashboard, Scripts Simulator), việc phân tán các file làm giảm tốc độ tìm kiếm và gây khó khăn khi thuyết trình trực tiếp trước hội đồng chấm thi.
+  - Tuy nhiên, nếu di chuyển (move) trực tiếp các tệp code từ `server/` hay `app/` sang một folder mới sẽ làm gãy các đường dẫn import và build pipeline.
+- **Giải pháp Kiến Trúc**:
+  - Tạo một **Master Hub (`iot-hub/`)** làm đầu mối tập trung (Single Entry Point) tại thư mục gốc của repository.
+  - Thiết lập bảng mapping SSOT phân loại khoa học toàn bộ 45+ file với đường dẫn tương tác trực tiếp (`file:///...`), giúp người dùng mở ngay lập tức trong IDE.
+  - Tập hợp toàn bộ sơ đồ đồ họa 3D bóc tách linh kiện (Exploded View, Isometric), ảnh linh kiện thật (APM2000, ESP32) và bảng kê chi phí BOM (~490.000 VNĐ) vào một thư mục con sẵn sàng chiếu slide.
+  - Cung cấp launcher 1-click (`.bat` / `.ps1`) để tự động mở Interactive Touchscreen Simulator (Port 3456) và Dashboard đối chứng thời gian thực mà không cần gõ lệnh phức tạp khi đang thuyết trình.
+
 ### 31. Xác Thực Cloudflare Account ID & Resource ID Khi Deploy Wrangler Production
 - **Bối cảnh & Sự cố**:
   - Khi chạy `wrangler d1 list` hoặc `wrangler deploy`, Wrangler báo lỗi `Authentication error [code: 10000]` do trường `account_id` trong `wrangler.jsonc` không khớp với tài khoản OAuth đã đăng nhập trên máy (`ppnh10092002@gmail.com` sở hữu account ID `5fdd1d1433519df6429d7418d43fff9a`).

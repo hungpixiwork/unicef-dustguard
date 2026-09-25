@@ -1,4 +1,9 @@
+#include <Arduino.h>
+#if __has_include("api.h")
 #include "api.h"
+#else
+#include "../include/api.h"
+#endif
 #include <mbedtls/md.h>
 
 ApiClient::ApiClient() 

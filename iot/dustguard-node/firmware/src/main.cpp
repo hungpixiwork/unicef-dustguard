@@ -5,7 +5,7 @@
 #include "types.h"
 #include "config.h"
 #include "apm2000.h"
-#include "wifi.h"
+#include "wifi_service.h"
 #include "api.h"
 #include "ui_manager.h"
 

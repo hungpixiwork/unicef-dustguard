@@ -1,5 +1,12 @@
-#include "wifi.h"
+#include <Arduino.h>
+#include <WiFi.h>
+#if __has_include("wifi_service.h")
+#include "wifi_service.h"
 #include "config.h"
+#else
+#include "../include/wifi_service.h"
+#include "../include/config.h"
+#endif
 
 WiFiService::WiFiService() : _ssid(nullptr), _password(nullptr), _lastReconnectAttempt(0), _connecting(false) {}
 

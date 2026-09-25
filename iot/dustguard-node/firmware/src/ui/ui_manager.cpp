@@ -1,4 +1,9 @@
+#include <Arduino.h>
+#if __has_include("ui_manager.h")
 #include "ui_manager.h"
+#else
+#include "../../include/ui_manager.h"
+#endif
 #include <algorithm>
 #include <cstdio>
 #include <cstring>

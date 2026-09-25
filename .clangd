@@ -1,0 +1,32 @@
+CompileFlags:
+  Compiler: C:/Users/ppnh1/.platformio/packages/toolchain-xtensa-esp32/bin/xtensa-esp32-elf-g++.exe
+  Add:
+    - --sysroot=C:/Users/ppnh1/.platformio/packages/toolchain-xtensa-esp32/xtensa-esp32-elf
+    - -isystem
+    - C:/Users/ppnh1/.platformio/packages/toolchain-xtensa-esp32/xtensa-esp32-elf/include
+    - -isystem
+    - C:/Users/ppnh1/.platformio/packages/toolchain-xtensa-esp32/lib/gcc/xtensa-esp32-elf/8.4.0/include
+    - -isystem
+    - C:/Users/ppnh1/.platformio/packages/toolchain-xtensa-esp32/xtensa-esp32-elf/include/c++/8.4.0
+    - -isystem
+    - C:/Users/ppnh1/.platformio/packages/toolchain-xtensa-esp32/xtensa-esp32-elf/include/c++/8.4.0/xtensa-esp32-elf
+    - -isystem
+    - C:/Users/ppnh1/.platformio/packages/framework-arduinoespressif32/cores/esp32
+    - -isystem
+    - C:/Users/ppnh1/.platformio/packages/framework-arduinoespressif32/variants/esp32
+    - -isystem
+    - D:/07-Competitions-Hackathons/unicef-dustguard/iot/dustguard-node/firmware/include
+    - -Wno-unknown-argument
+  Remove:
+    - -mlongcalls
+    - -fstrict-volatile-bitfields
+    - -fno-tree-switch-conversion
+    - -fno-jump-tables
+    - -Wno-frame-address
+    - -Wno-error=unused-but-set-variable
+
+Diagnostics:
+  Suppress:
+    - unknown_argument
+    - unused-command-line-argument
+    - pp_file_not_found

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- DustGuard IoT node — isometric exploded strip (text-free).
+     Layers L→R: APM2000 · ESP32 · OLED · USB/Wi-Fi
+     Redrawn from IoT_Node.pdf / isometric style ref; team original vector.
+     Labels typeset in Typst from content.yml (zone7_tech.iot.stages). -->
+<svg viewBox="0 0 920 210" width="920" height="210" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="silTop" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F4F0E8"/><stop offset="50%" stop-color="#D6D0C4"/><stop offset="100%" stop-color="#B4AD9F"/>
+    </linearGradient>
+    <linearGradient id="silL" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#C2BBB0"/><stop offset="100%" stop-color="#8A8378"/>
+    </linearGradient>
+    <linearGradient id="silF" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E6E0D6"/><stop offset="100%" stop-color="#A49D90"/>
+    </linearGradient>
+  </defs>
+  <!-- 1. APM2000 -->
+  <polygon points="103.74,90.50 55.24,118.50 55.24,90.50 103.74,62.50" fill="url(#silL)" stroke="#231B14" stroke-width="2" stroke-linejoin="round"/>
+  <polygon points="103.74,90.50 174.76,131.50 174.76,103.50 103.74,62.50" fill="url(#silF)" stroke="#231B14" stroke-width="2" stroke-linejoin="round"/>
+  <polygon points="103.74,62.50 174.76,103.50 126.26,131.50 55.24,90.50" fill="url(#silTop)" stroke="#231B14" stroke-width="2" stroke-linejoin="round"/>
+  <ellipse cx="110.32" cy="91.50" rx="11" ry="6.4" fill="#8A8478" stroke="#231B14" stroke-width="1.6"/>
+  <ellipse cx="110.32" cy="90.00" rx="6.2" ry="3.6" fill="#231B14"/>
+  <line x1="117.94" y1="86.10" x2="160.55" y2="110.70" stroke="#231B14" stroke-width="2.8" stroke-linecap="round"/>
+  <circle cx="79.49" cy="92.50" r="1.7" fill="#6E685E"/>
+  <circle cx="79.49" cy="85.50" r="1.7" fill="#6E685E"/>
+  <circle cx="79.49" cy="78.50" r="1.7" fill="#6E685E"/>
+  <g stroke="#9f0d0c" stroke-width="2.4" stroke-dasharray="8 5" stroke-linecap="round" fill="none">
+    <path d="M 188 118 L 240 118"/>
+  </g>
+  <path d="M 238 111 L 250 118 L 238 125 Z" fill="#9f0d0c"/>
+  <!-- 2. ESP32 -->
+  <polygon points="312.68,91.00 264.18,119.00 264.18,110.00 312.68,82.00" fill="#084840" stroke="#231B14" stroke-width="2" stroke-linejoin="round"/>
+  <polygon points="312.68,91.00 395.82,139.00 395.82,130.00 312.68,82.00" fill="#0A5A52" stroke="#231B14" stroke-width="2" stroke-linejoin="round"/>
+  <polygon points="312.68,82.00 395.82,130.00 347.32,158.00 264.18,110.00" fill="#0D6F64" stroke="#231B14" stroke-width="2" stroke-linejoin="round"/>
+  <polygon points="314.41,93.00 286.70,109.00 286.70,102.00 314.41,86.00" fill="#14110E" stroke="#231B14" stroke-width="2" stroke-linejoin="round"/>
+  <polygon points="314.41,93.00 349.05,113.00 349.05,106.00 314.41,86.00" fill="#2C241C" stroke="#231B14" stroke-width="2" stroke-linejoin="round"/>
+  <polygon points="314.41,86.00 349.05,106.00 321.34,122.00 286.70,102.00" fill="#231B14" stroke="#231B14" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M 312.47 91.92 L 338.80 107.12 L 328.82 112.88" fill="none" stroke="#FDFBF7" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="352.52" cy="116.30" r="2.2" fill="#DDD7CE"/>
+  <circle cx="362.91" cy="122.30" r="2.2" fill="#DDD7CE"/>
+  <circle cx="373.30" cy="128.30" r="2.2" fill="#DDD7CE"/>
+  <circle cx="338.66" cy="124.30" r="2.2" fill="#DDD7CE"/>
+  <circle cx="349.05" cy="130.30" r="2.2" fill="#DDD7CE"/>
+  <circle cx="359.44" cy="136.30" r="2.2" fill="#DDD7CE"/>
+  <circle cx="324.80" cy="132.30" r="2.2" fill="#DDD7CE"/>
+  <circle cx="345.59" cy="144.30" r="2.2" fill="#DDD7CE"/>
+  <rect x="265.38" y="120.10" width="2.8" height="2.8" fill="#C9C3B8" stroke="#231B14" stroke-width="0.7"/>
+  <rect x="275.34" y="125.85" width="2.8" height="2.8" fill="#C9C3B8" stroke="#231B14" stroke-width="0.7"/>
+  <rect x="285.30" y="131.60" width="2.8" height="2.8" fill="#C9C3B8" stroke="#231B14" stroke-width="0.7"/>
+  <rect x="295.26" y="137.35" width="2.8" height="2.8" fill="#C9C3B8" stroke="#231B14" stroke-width="0.7"/>
+  <rect x="305.22" y="143.10" width="2.8" height="2.8" fill="#C9C3B8" stroke="#231B14" stroke-width="0.7"/>
+  <rect x="315.18" y="148.85" width="2.8" height="2.8" fill="#C9C3B8" stroke="#231B14" stroke-width="0.7"/>
+  <rect x="325.14" y="154.60" width="2.8" height="2.8" fill="#C9C3B8" stroke="#231B14" stroke-width="0.7"/>
+  <rect x="335.10" y="160.35" width="2.8" height="2.8" fill="#C9C3B8" stroke="#231B14" stroke-width="0.7"/>
+  <line x1="377.53" y1="124.84" x2="392.49" y2="133.48" stroke="#FDFBF7" stroke-width="3.4" stroke-linecap="round"/>
+  <g stroke="#9f0d0c" stroke-width="2.4" stroke-dasharray="8 5" stroke-linecap="round" fill="none">
+    <path d="M 408 122 L 460 122"/>
+  </g>
+  <path d="M 458 115 L 470 122 L 458 129 Z" fill="#9f0d0c"/>
+  <!-- 3. OLED -->
+  <polygon points="529.41,94.00 484.38,120.00 484.38,112.00 529.41,86.00" fill="#084840" stroke="#231B14" stroke-width="2" stroke-linejoin="round"/>
+  <polygon points="529.41,94.00 605.62,138.00 605.62,130.00 529.41,86.00" fill="#0A5A52" stroke="#231B14" stroke-width="2" stroke-linejoin="round"/>
+  <polygon points="529.41,86.00 605.62,130.00 560.59,156.00 484.38,112.00" fill="#0D6F64" stroke="#231B14" stroke-width="2" stroke-linejoin="round"/>
+  <polygon points="533.74,98.00 583.97,127.00 556.26,143.00 506.03,114.00" fill="#14110E" stroke="#231B14" stroke-width="1.6" stroke-linejoin="round"/>
+  <polygon points="532.88,100.00 540.67,104.50 518.15,117.50 510.36,113.00" fill="#4EC4BA" stroke="none" stroke-linejoin="round"/>
+  <line x1="540.67" y1="111.60" x2="570.11" y2="128.60" stroke="#2A4A46" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="535.47" y1="114.60" x2="564.92" y2="131.60" stroke="#2A4A46" stroke-width="1.3" stroke-linecap="round"/>
+  <line x1="530.28" y1="117.60" x2="559.72" y2="134.60" stroke="#2A4A46" stroke-width="1.3" stroke-linecap="round"/>
+  <g stroke="#9f0d0c" stroke-width="2.4" stroke-dasharray="8 5" stroke-linecap="round" fill="none">
+    <path d="M 622 122 L 674 122"/>
+  </g>
+  <path d="M 672 115 L 684 122 L 672 129 Z" fill="#9f0d0c"/>
+  <!-- 4. USB · Wi-Fi -->
+  <circle cx="720" cy="95" r="4.5" fill="#0D6F64"/>
+  <path d="M 705 86 Q 720 71 735 86" fill="none" stroke="#0D6F64" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M 696 77 Q 720 53 744 77" fill="none" stroke="#0D6F64" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M 687 68 Q 720 35 753 68" fill="none" stroke="#0D6F64" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M 742 120 C 752 142, 772 148, 786 132 S 802 110, 816 128 S 828 158, 800 164" fill="none" stroke="#231B14" stroke-width="3.8" stroke-linecap="round"/>
+  <polygon points="821.77,141.75 807.05,150.25 807.05,139.25 821.77,130.75" fill="#9A9488" stroke="#231B14" stroke-width="2" stroke-linejoin="round"/>
+  <polygon points="821.77,141.75 852.95,159.75 852.95,148.75 821.77,130.75" fill="#C4BEB2" stroke="#231B14" stroke-width="2" stroke-linejoin="round"/>
+  <polygon points="821.77,130.75 852.95,148.75 838.23,157.25 807.05,139.25" fill="#EDE9E2" stroke="#231B14" stroke-width="2" stroke-linejoin="round"/>
+  <polygon points="850.58,157.72 863.57,165.22 855.32,169.98 842.33,162.48" fill="#8A8478" stroke="#231B14" stroke-width="2" stroke-linejoin="round"/>
+</svg>

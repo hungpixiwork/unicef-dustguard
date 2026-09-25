@@ -2,6 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sqliteClient } from '../apps/server/dist/db/index.js';
 
+try {
+  sqliteClient.exec('PRAGMA busy_timeout = 5000; PRAGMA journal_mode = WAL;');
+} catch (_) {}
+
 test('DustGuard VN — Real Telemetry Pipeline & IoT Invariant Suite', async (t) => {
   
   await t.test('1. Kiểm tra tồn tại trạm đo thật DG-IOT-001 trong CSDL SSOT', () => {
@@ -24,8 +28,8 @@ test('DustGuard VN — Real Telemetry Pipeline & IoT Invariant Suite', async (t)
     // Ingest reading
     sqliteClient.prepare(`
       INSERT INTO iot_readings (id, device_id, timestamp, pm25, pm10, pm1, wifi_rssi, created_at)
-      VALUES (?, ?, datetime('now'), ?, ?, ?, ?, ?)
-    `).run(testReadingId, device.id, rawPm25, rawPm10, rawPm1, rssi, nowIso);
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(testReadingId, device.id, nowIso, rawPm25, rawPm10, rawPm1, rssi, nowIso);
 
     // Cập nhật trạm
     sqliteClient.prepare(`

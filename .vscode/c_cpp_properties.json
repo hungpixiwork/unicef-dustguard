@@ -2,7 +2,19 @@
     "configurations": [
         {
             "name": "PlatformIO",
+            "compileCommands": "${workspaceFolder}/compile_commands.json",
             "includePath": [
+                "D:/07-Competitions-Hackathons/unicef-dustguard/iot/dustguard-node/firmware/include",
+                "D:/07-Competitions-Hackathons/unicef-dustguard/iot/dustguard-node/firmware/src",
+                "D:/07-Competitions-Hackathons/unicef-dustguard/iot/dustguard-node/firmware/.pio/libdeps/esp32_tft_touch/**",
+                "C:/Users/ppnh1/.platformio/packages/framework-arduinoespressif32/cores/esp32",
+                "C:/Users/ppnh1/.platformio/packages/framework-arduinoespressif32/variants/esp32",
+                "C:/Users/ppnh1/.platformio/packages/framework-arduinoespressif32/libraries/**",
+                "C:/Users/ppnh1/.platformio/packages/toolchain-xtensa-esp32/xtensa-esp32-elf/include",
+                "C:/Users/ppnh1/.platformio/packages/toolchain-xtensa-esp32/xtensa-esp32-elf/include/c++/8.4.0",
+                "C:/Users/ppnh1/.platformio/packages/toolchain-xtensa-esp32/xtensa-esp32-elf/include/c++/8.4.0/xtensa-esp32-elf",
+                "D:/07-Competitions-Hackathons/unicef-dustguard/firmware/include",
+                "D:/07-Competitions-Hackathons/unicef-dustguard/firmware/src",
                 "D:/07-Competitions-Hackathons/unicef-dustguard/firmware/esp32_apm2000/src",
                 "C:/Users/ppnh1/.platformio/packages/framework-arduinoespressif32/libraries/Preferences/src",
                 "C:/Users/ppnh1/.platformio/packages/framework-arduinoespressif32/libraries/HTTPClient/src",
@@ -492,12 +504,9 @@
                 ""
             ],
             "cStandard": "gnu99",
-            "cppStandard": "gnu++11",
+            "cppStandard": "gnu++17",
             "compilerPath": "C:/Users/ppnh1/.platformio/packages/toolchain-xtensa-esp32/bin/xtensa-esp32-elf-gcc.exe",
-            "compilerArgs": [
-                "-mlongcalls",
-                ""
-            ]
+            "compilerArgs": []
         }
     ],
     "version": 4

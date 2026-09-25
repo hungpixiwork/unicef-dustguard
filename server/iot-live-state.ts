@@ -23,9 +23,13 @@ export {
   LIVE_REFRESH_MS,
   NORMAL_SYNC_MS,
   ONLINE_THRESHOLD_MS,
+  DEFAULT_DEVICE_ID,
   isFlatline,
   getDefaultLiveState,
   getLiveState,
   getAllLiveStates,
-  updateLiveState
+  updateLiveState,
+  clearLiveStateStore,
+  persistLiveStateToCache,
+  restoreLiveStateFromCache
 } from './iot-live-state.js';

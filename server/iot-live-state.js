@@ -6,32 +6,66 @@
 export const LIVE_REFRESH_MS = 15_000;
 export const NORMAL_SYNC_MS = 300_000;
 export const ONLINE_THRESHOLD_MS = 600_000; // 10 minutes
+export const DEFAULT_DEVICE_ID = 'DG-IOT-001';
 
 const liveStateStore = new Map();
 
+export function clearLiveStateStore() {
+  liveStateStore.clear();
+}
+
+export async function persistLiveStateToCache(state) {
+  try {
+    if (typeof caches !== 'undefined' && caches.default) {
+      const url = `https://internal.cache/iot-live/${state.deviceId}`;
+      const res = new Response(JSON.stringify(state), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+      await caches.default.put(url, res);
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+export async function restoreLiveStateFromCache(deviceId) {
+  try {
+    if (typeof caches !== 'undefined' && caches.default) {
+      const url = `https://internal.cache/iot-live/${deviceId}`;
+      const res = await caches.default.match(url);
+      if (res) return await res.json();
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function isFlatline(readings) {
   if (!readings || readings.length < 5) return false;
-  const first = readings[0].pm25;
-  return readings.every(r => Math.abs(r.pm25 - first) < 0.001);
+  const last5 = readings.slice(-5);
+  const first = last5[0].pm25;
+  return last5.every(r => Math.abs(r.pm25 - first) < 0.001);
 }
 
 export function getDefaultLiveState(deviceId = 'DG-IOT-001') {
+  const isDefault = deviceId === 'DG-IOT-001';
   const now = Date.now();
   return {
     deviceId,
-    online: true,
-    pm1: 8,
-    pm25: 14,
-    pm10: 22,
-    temperature: 28.5,
-    humidity: 65.0,
-    rssi: -68,
-    lastSeen: now,
-    sensorStatus: 'OK',
+    online: isDefault,
+    pm1: isDefault ? 8 : 0,
+    pm25: isDefault ? 14 : 0,
+    pm10: isDefault ? 22 : 0,
+    temperature: isDefault ? 28.5 : 0,
+    humidity: isDefault ? 65.0 : 0,
+    rssi: isDefault ? -68 : 0,
+    lastSeen: isDefault ? now : 0,
+    sensorStatus: isDefault ? 'OK' : 'OFFLINE',
     anomalyState: 'NORMAL',
-    last5Readings: [
-      { pm25: 14, timestamp: now }
-    ]
+    last5Readings: isDefault ? [{ pm25: 14, timestamp: now }] : []
   };
 }
 
@@ -44,7 +78,7 @@ export function getLiveState(deviceId = 'DG-IOT-001') {
     liveStateStore.set(normalizedId, state);
   }
 
-  const isOnline = (Date.now() - state.lastSeen) <= ONLINE_THRESHOLD_MS;
+  const isOnline = state.lastSeen > 0 && (Date.now() - state.lastSeen) <= ONLINE_THRESHOLD_MS;
 
   return {
     ...state,
@@ -61,7 +95,7 @@ export function getAllLiveStates() {
   for (const state of liveStateStore.values()) {
     result.push({
       ...state,
-      online: (now - state.lastSeen) <= ONLINE_THRESHOLD_MS
+      online: state.lastSeen > 0 && (now - state.lastSeen) <= ONLINE_THRESHOLD_MS
     });
   }
   return result;
@@ -87,13 +121,16 @@ export function updateLiveState(payload) {
   if (!payload.anomalyState) {
     if (isFlatline(last5)) {
       newAnomalyState = 'FAULTY';
-      sensorStatus = 'FAULT_FLATLINE';
+      sensorStatus = 'FAULTY';
     } else if (pm25 >= 75) {
       newAnomalyState = 'HIGH_PM';
-    } else if (pm25 >= 35) {
+    } else if (pm25 >= 50) {
       newAnomalyState = 'ELEVATED';
     } else {
       newAnomalyState = 'NORMAL';
+      if (previousAnomalyState === 'FAULTY') {
+        sensorStatus = 'ONLINE';
+      }
     }
   }
 

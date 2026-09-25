@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Exploded IoT path: particulate sensor module -> MCU board -> radio -> DustGuard.
+     Four stages on a fixed 210 px pitch (centres 105 / 315 / 525 / 735) so the
+     Typst label row underneath lines up with each stage. No text in the SVG. -->
+<svg viewBox="0 0 840 170" width="840" height="170" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- ============ 1. particulate sensor module, lid exploded off ============ -->
+  <rect x="53" y="22" width="104" height="18" rx="4" fill="#DDD7CE" stroke="#231B14" stroke-width="3" />
+  <path d="M 105 42 L 105 52" stroke="#8C827A" stroke-width="3" stroke-dasharray="5 4" />
+  <rect x="45" y="54" width="120" height="84" rx="8" fill="#FFFFFF" stroke="#231B14" stroke-width="3.5" />
+  <rect x="33" y="82" width="13" height="18" rx="2" fill="#8C827A" />
+  <rect x="164" y="82" width="13" height="18" rx="2" fill="#8C827A" />
+  <circle cx="88" cy="96" r="21" fill="#FDECEA" stroke="#9f0d0c" stroke-width="3" />
+  <circle cx="88" cy="96" r="7" fill="#9f0d0c" />
+  <rect x="120" y="76" width="32" height="40" rx="4" fill="none" stroke="#231B14" stroke-width="3" />
+  <path d="M 126 84 L 146 84 M 126 96 L 146 96 M 126 108 L 146 108" stroke="#8C827A" stroke-width="3" stroke-linecap="round" />
+
+  <!-- ============ 2. MCU board ============ -->
+  <rect x="249" y="58" width="132" height="76" rx="6" fill="#0D6F64" stroke="#0A4F47" stroke-width="3" />
+  <rect x="268" y="76" width="44" height="40" rx="3" fill="#231B14" />
+  <path d="M 274 84 L 306 84 M 274 96 L 306 96 M 274 108 L 306 108" stroke="#5C5248" stroke-width="3" stroke-linecap="round" />
+  <path d="M 328 74 L 340 74 L 340 86 L 352 86 L 352 74 L 364 74"
+        fill="none" stroke="#FDFBF7" stroke-width="4" stroke-linejoin="round" />
+  <path d="M 328 104 L 364 104" stroke="#FDFBF7" stroke-width="4" stroke-linecap="round" />
+  <g fill="#DDD7CE">
+    <rect x="262" y="134" width="10" height="10" /><rect x="284" y="134" width="10" height="10" />
+    <rect x="306" y="134" width="10" height="10" /><rect x="328" y="134" width="10" height="10" />
+    <rect x="350" y="134" width="10" height="10" />
+  </g>
+
+  <!-- ============ 3. radio uplink ============ -->
+  <circle cx="492" cy="96" r="9" fill="#231B14" />
+  <g fill="none" stroke="#231B14" stroke-width="5" stroke-linecap="round">
+    <path d="M 506 74 Q 526 96 506 118" />
+    <path d="M 522 60 Q 552 96 522 132" />
+    <path d="M 538 46 Q 578 96 538 146" />
+  </g>
+
+  <!-- ============ 4. DustGuard ============ -->
+  <g fill="#E8F4F2">
+    <circle cx="706" cy="100" r="26" />
+    <circle cx="740" cy="84" r="34" />
+    <circle cx="774" cy="102" r="24" />
+    <rect x="706" y="102" width="68" height="26" rx="13" />
+  </g>
+  <path d="M 740 68 L 768 78 L 768 100 Q 768 120 740 130 Q 712 120 712 100 L 712 78 Z"
+        fill="#0D6F64" />
+  <path d="M 727 99 L 736 108 L 754 88" fill="none" stroke="#FDFBF7" stroke-width="6"
+        stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- ============ connectors ============ -->
+  <g stroke="#9f0d0c" stroke-width="3.5" stroke-dasharray="9 7" stroke-linecap="round">
+    <path d="M 183 96 L 228 96" />
+    <path d="M 393 96 L 438 96" />
+    <path d="M 603 96 L 648 96" />
+  </g>
+  <g fill="#9f0d0c">
+    <path d="M 226 88 L 240 96 L 226 104 Z" />
+    <path d="M 436 88 L 450 96 L 436 104 Z" />
+    <path d="M 646 88 L 660 96 L 646 104 Z" />
+  </g>
+</svg>

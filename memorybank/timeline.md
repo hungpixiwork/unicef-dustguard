@@ -7,6 +7,35 @@
 
 ## 📅 Các Mốc Phát Triển Chính (Milestones)
 
+### 37. [2026-09-20] `docs-iot-hub-master-mapping`: Thiết Lập Trung Tâm Toàn Diện IoT-Hub & Bản Đồ SSOT File Phục Vụ Thuyết Trình SIC 2026
+- **Bối cảnh & Mục tiêu**:
+  - Người dùng yêu cầu mapping toàn bộ các file liên quan tới IoT vào một thư mục trực quan, dễ đọc, dễ tìm kiếm và phục vụ thuyết trình hội đồng Samsung Innovation Campus 2026.
+- **Thực thi Kiến Trúc & Tổ Chức Hub**:
+  - Tạo thư mục trung tâm `iot-hub/` tại root workspace và file liên kết `iot/README.md`.
+  - Thiết lập file Bản đồ SSOT Master Mapping `iot-hub/00_DANH_MUC_VA_MAPPING_TOAN_BO_FILE_IOT.md` phân loại đầy đủ 45+ file liên quan tới IoT:
+    1. Firmware C++17 ESP32 & Driver UART APM2000 (`iot/dustguard-node/firmware/...`)
+    2. Sơ đồ phần cứng, mạch nối dây & Bảng kê linh kiện BOM (`iot-hub/02_SO_DO_PHAN_CUNG_VA_LINH_KIEN/...`)
+    3. Backend Cloudflare Workers API & CSDL D1 (`server/iot.ts`, `migrations/0006_iot_telemetry.sql`...)
+    4. Giao diện Web Dashboard (`/iot`), Trang bìa SIC (`/sic`), Samsung Cover Screen Widget
+    5. Kịch bản thuyết trình 5 phút (`iot-hub/01_KICH_BAN_THUYET_TRINH_5_PHUT.md`) kèm giải đáp phản biện
+    6. Công cụ giả lập màn hình cảm ứng 1-click (`CHAY_DEMO_TOUCHSCREEN_SIMULATOR.bat`, `.ps1` mở port 3456).
+- **Kiểm thử & Đồng bộ Runtime**:
+  - Đồng bộ chuẩn ISO timestamp và xuất đầy đủ export singleton trong `server/iot-live-state.js` & `iot-live-state.ts`.
+  - Bộ 3 bài test IoT (`tests/iot-realtime-telemetry.test.js`, `tests/touchscreen-firmware-acceptance.test.js`, `tests/iot-live-state.test.js`): PASS 28/28 tests 100%.
+
+### 36. [2026-09-20] `chore-d1-purge-remote-and-fallback-local`: Xóa Remote D1 Database Trên Cloudflare & Fallback Hoàn Toàn Về Local SQLite (SSOT)
+- **Bối cảnh & Thực thi**:
+  - Người dùng yêu cầu xóa sạch database production trên Cloudflare và fallback về môi trường local D1 SQLite.
+  - Sử dụng CLI chuẩn `npx wrangler d1 delete dustguard-production -y` (xóa thành công remote database `ad40205a-ec4b-40f3-8ab2-c2e7b9e78699`).
+- **Sửa Lỗi & Khởi Tạo Local Database**:
+  - Phát hiện & sửa lỗi cú pháp duplicate dở dang (196 dòng dán đè) trong `app/prisma/d1-schema.sql` (gây lỗi `near ""student_name"": syntax error at offset 0: SQLITE_ERROR`).
+  - Thực thi khởi tạo schema local thành công: `npm --prefix app run db:local:init`.
+  - Thực thi nạp dữ liệu mẫu thành công: `npm --prefix app run db:local:seed`.
+  - Kiểm tra số liệu D1 local: `Sites: 24`, `Cases: 6`, `Complaints: 8`, `Sensors: 12`.
+- **Nghiệm Thu Toàn Bộ**:
+  - Xác nhận danh sách remote D1 `npx wrangler d1 list`: `dustguard-production` đã bị xóa hoàn toàn.
+  - Chạy `npm --prefix app run verify:quick`: 35 file test, 291/291 assertions PASS 100%.
+
 ### 35. [2026-09-20] `feat-prod-deploy-unified-worker-and-zero-d1`: Deploy Production Cloudflare Worker & Static Assets (Custom Domain)
 - **Bối cảnh & Xử lý**:
   - Khắc phục cấu hình `wrangler.jsonc`: sửa `account_id` đúng (`5fdd1d1433519df6429d7418d43fff9a`), phục hồi `database_id: ad40205a-ec4b-40f3-8ab2-c2e7b9e78699`, R2 buckets `dustguard-storage`, và route custom domain `dustguard.phamphunguyenhung.com`.

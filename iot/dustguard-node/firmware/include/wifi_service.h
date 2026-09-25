@@ -1,6 +1,8 @@
-#ifndef DUSTGUARD_WIFI_H
-#define DUSTGUARD_WIFI_H
+#ifndef DUSTGUARD_WIFI_SERVICE_H
+#define DUSTGUARD_WIFI_SERVICE_H
 
+#include <Arduino.h>
+#include <WString.h>
 #include <WiFi.h>
 #include "types.h"
 
@@ -23,4 +25,4 @@ private:
     bool _connecting;
 };
 
-#endif // DUSTGUARD_WIFI_H
+#endif // DUSTGUARD_WIFI_SERVICE_H

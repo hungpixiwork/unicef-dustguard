@@ -2,6 +2,8 @@
 #define DUSTGUARD_API_CLIENT_H
 
 #include <Arduino.h>
+#include <WString.h>
+#include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include "types.h"

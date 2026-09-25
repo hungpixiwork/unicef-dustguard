@@ -1,0 +1,9 @@
+{
+    "C_Cpp.default.configurationProvider": "ms-vscode.cpptools",
+    "C_Cpp.errorSquiggles": "disabled",
+    "clangd.arguments": [
+        "--compile-commands-dir=${workspaceFolder}",
+        "--query-driver=C:/Users/ppnh1/.platformio/packages/toolchain-xtensa-esp32/bin/xtensa-esp32-elf-*,C:\\Users\\ppnh1\\.platformio\\packages\\toolchain-xtensa-esp32\\bin\\xtensa-esp32-elf-*",
+        "--header-insertion=never"
+    ]
+}

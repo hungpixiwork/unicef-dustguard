@@ -1,5 +1,11 @@
+#include <Arduino.h>
+#if __has_include("apm2000.h")
 #include "apm2000.h"
 #include "config.h"
+#else
+#include "../include/apm2000.h"
+#include "../include/config.h"
+#endif
 
 APM2000Driver::APM2000Driver() 
     : _serial(2), _validFrames(0), _invalidFrames(0), _totalMeasurements(0), _lastReadTime(0) {
