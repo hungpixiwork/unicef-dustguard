@@ -13,6 +13,10 @@
 
 [🌐 Trải Nghiệm Nền Tảng Trực Tuyến](https://dustguard.phamphunguyenhung.com) • [📋 Báo Cáo Kỹ Thuật](docs/audit/DUSTGUARD_TWO_SIDE_PRODUCTION_AUDIT_FINAL.md) • [📊 Báo Cáo Thuyết Minh GTM](docs/)
 
+<div align="center">
+  <img src="uploads/dustguard-community-desktop.png" alt="DustGuard VN Community Platform Hero" width="920" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);" />
+</div>
+
 ---
 </div>
 
